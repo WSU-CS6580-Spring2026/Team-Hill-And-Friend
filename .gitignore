@@ -1,3 +1,15 @@
+# Ignore all data files locally (protects against large uploads)
+data/raw/*
+data/interim/*
+data/processed/*
+# But don't ignore the folders themselves (so the structure stays on GitHub)
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+# Ignore API keys and environment variables
+.env
+Keys.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
