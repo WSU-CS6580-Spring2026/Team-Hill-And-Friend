@@ -1,8 +1,26 @@
-# Team-Hill-And-Friend
-The repository for our team for Data Science Algorithms 2!
 
 
-## Using the environment.yml
+#  Weather-Based LIRR Delay Prediction
+
+## Group: Team Hill And Friend
+
+### Members and Roles
+- **Mylee Anderson** — Project Lead / Model Helper
+- **Skyler Turner** — Model Lead
+- **Taylor Shipley** — Data Engineer / UI
+- **Chase Powers** — Reviewer
+
+---
+
+## High-Level Overview
+
+This project focuses on predicting **Long Island Rail Road (LIRR) train delays** based on weather conditions. Combining historical train delay records with Long Island weather station data to explore how weather patterns affect transit performance. The goal is to estimate how many minutes late a train is likely to be, helping commuters make better decisions about when and how to travel.
+
+
+---
+#  Getting Started
+
+### Using the environment.yml
 This is how we will stay on the same page with dependencies and library versions.
 There is an environment.yml file in our repo now that we can all download and update as we work on this project.
 You can also setup your conda environment (hillandfriend) for the jupyter notebooks.
