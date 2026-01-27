@@ -31,7 +31,7 @@
 - Granularity: delay data by line; aggregate to match weather reporting granularity where needed.
 
 ## Risks & Mitigations
-- Risk: High‑cardinality categorical features (e.g., weather_type, subway_line) can inflate dimensionality.
+- Risk: High‑cardinality categorical features (e.g., weather_type, train_line) can inflate dimensionality.
   - Mitigation: consolidate categories, target encoding, or regularization.
 - Risk: Missing or inconsistent timestamps between datasets.
   - Mitigation: date normalization, imputation rules, and sensitivity checks.
