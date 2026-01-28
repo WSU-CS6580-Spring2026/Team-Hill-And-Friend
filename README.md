@@ -48,7 +48,7 @@ This will keep us all up to date and ensure we can work in the same environments
 - The Windows file includes Windows-only and CUDA/NVIDIA dependencies; macOS/Linux users should use the macOS/Linux env file to avoid solve errors.
 
 ### How to update
-- If you `conda install` something to use, be sure to update the environment.yml file
+- If you `conda install` something to use, be sure to update both environment.yml and environment.macos-linux.yml files
 
 - Run:
 ```
