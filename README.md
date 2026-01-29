@@ -34,6 +34,23 @@ conda activate hillandfriend
 ```
 This keeps us all up to date and ensures we can work in the same environment for reproducible results.
 
+### Setting Up Pre-Commit Hooks and nbstripout
+After creating the conda environment, you need to set up pre-commit hooks and nbstripout to ensure consistent code quality and clean Jupyter notebooks in version control.
+
+#### Install Pre-Commit Hooks
+Pre-commit hooks automatically run checks before each commit to catch issues early:
+```
+pre-commit install
+```
+
+#### Install nbstripout Filter
+nbstripout automatically strips output cells and metadata from Jupyter notebooks before committing, keeping our repository clean and reducing merge conflicts:
+```
+nbstripout --install
+```
+
+These tools help maintain code quality and make collaboration smoother by ensuring notebooks are committed without execution outputs or unnecessary metadata.
+
 ### Note
 - Review `environment.yml` if you need platform-specific packages, but the file is designed to resolve cleanly on Windows, macOS, and Linux.
 
