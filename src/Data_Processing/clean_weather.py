@@ -15,5 +15,13 @@ df = (
 )
 
 df.info()
+#In[2]
+df.isna().sum()
 
+#In[3]
+df['PRCP'] = df['PRCP'].fillna(0)
+df['SNOW'] = df['SNOW'].fillna(0)
+df['SNWD'] = df['SNWD'].fillna(0)
+
+df.isna().sum()
 # %%
