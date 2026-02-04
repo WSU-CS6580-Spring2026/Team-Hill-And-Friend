@@ -29,3 +29,6 @@ dependencies:
   - pytorch=2.5
   - torchvision
   - torchaudio
+
+  - nbstripout
+  - pre-commit
