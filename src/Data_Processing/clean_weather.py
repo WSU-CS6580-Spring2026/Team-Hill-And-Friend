@@ -22,6 +22,33 @@ df.isna().sum()
 df['PRCP'] = df['PRCP'].fillna(0)
 df['SNOW'] = df['SNOW'].fillna(0)
 df['SNWD'] = df['SNWD'].fillna(0)
+df['WESD'] = df['WESD'].fillna(0)
+df['WT05'] = df['WT05'].fillna(0)
+
 
 df.isna().sum()
+#In[4]
+df = df.sort_values("DATE")
+
+df["tmin_roll"] = (
+    df["TMIN"]
+    .rolling(window=7, center=True, min_periods=1)
+    .mean()
+)
+
+df["tmax_roll"] = (
+    df["TMAX"]
+    .rolling(window=7, center=True, min_periods=1)
+    .mean()
+)
+
+
+df["TMIN"] = df["TMIN"].fillna(df["tmin_roll"])
+df["TMAX"] = df["TMAX"].fillna(df["tmax_roll"])
+
+df = df.drop(columns=["tmin_roll", "tmax_roll"])
+df.isna().sum()
+#In[5]
+df.to_csv('../../data/processed/Long_Island_Weather_Cleaned.csv', index=False)
+
 # %%

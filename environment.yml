@@ -13,6 +13,7 @@ dependencies:
   - pandas
   - scipy
   - scikit-learn
+  - seaborn
   - matplotlib
   - xgboost
 
