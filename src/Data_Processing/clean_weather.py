@@ -1,54 +1,71 @@
-#In[1]
-import numpy as np
+from pathlib import Path
 import pandas as pd
-import seaborn as sns
-import matplotlib as plt
-#D:\mypie\Documents\CS6580\Team-Hill-And-Friend\data\raw\Long_Island_Weather.csv
-#D:\mypie\Documents\CS6580\Team-Hill-And-Friend\src\Data_Processing\clean_weather.py
-df = (
-    pd.read_csv(
-        '../../data/raw/Long_Island_Weather.csv',
-        parse_dates=['DATE'],
+
+def main() -> None:
+    base_dir = Path(__file__).resolve().parents[2]
+
+    raw_path = base_dir / "data" / "raw" / "Long_Island_Weather.csv"
+    processed_dir = base_dir / "data" / "processed"
+    processed_path = processed_dir / "Long_Island_Weather_Cleaned.csv"
+
+    df = pd.read_csv(raw_path, parse_dates=["DATE"])
+    print(df.head())
+
+    df.info()
+
+    print(df.isna().sum())
+
+    #If values are missing for PRCP, SNOW, or SNWD assume there is none, put 0 in
+    df['PRCP'] = df['PRCP'].fillna(0)
+    df['SNOW'] = df['SNOW'].fillna(0)
+    df['SNWD'] = df['SNWD'].fillna(0)
+    df['PRCP_TOTAL'] = df['PRCP'] + df['SNOW']
+
+    #Drop these columns, wont be used in our prediction
+    df = df.drop(columns=['WESD', 'WT05', 'TOBS'])
+
+    #Uncomment for testing averages
+    # first_null_index = df['TMIN'].isnull().idxmax()
+    # print(df.loc[first_null_index-3])
+    # print(df.loc[first_null_index-2])
+    # print(df.loc[first_null_index-1])
+    # print(df.loc[first_null_index])
+    # print(df.loc[first_null_index+1])
+    # print(df.loc[first_null_index+2])
+    # print(df.loc[first_null_index+3])
+
+    #If a value is missing for TMAX or TMIN, average it
+    df = df.sort_values("DATE")
+
+    df["tmin_roll"] = (
+        df["TMIN"]
+        .rolling(window=7, center=True, min_periods=1)
+        .mean()
     )
-    .rename(columns=str.strip)
-    .sort_values('DATE')
-)
 
-df.info()
-#In[2]
-df.isna().sum()
+    df["tmax_roll"] = (
+        df["TMAX"]
+        .rolling(window=7, center=True, min_periods=1)
+        .mean()
+    )
 
-#In[3]
-df['PRCP'] = df['PRCP'].fillna(0)
-df['SNOW'] = df['SNOW'].fillna(0)
-df['SNWD'] = df['SNWD'].fillna(0)
-df['WESD'] = df['WESD'].fillna(0)
-df['WT05'] = df['WT05'].fillna(0)
+    df["TMIN"] = df["TMIN"].fillna(df["tmin_roll"])
+    df["TMAX"] = df["TMAX"].fillna(df["tmax_roll"])
 
+    df = df.drop(columns=["tmin_roll", "tmax_roll"])
+    print(df.isna().sum())
 
-df.isna().sum()
-#In[4]
-df = df.sort_values("DATE")
+    #Uncomment for testing averages
+    # print(df.loc[first_null_index-3])
+    # print(df.loc[first_null_index-2])
+    # print(df.loc[first_null_index-1])
+    # print(df.loc[first_null_index])
+    # print(df.loc[first_null_index+1])
+    # print(df.loc[first_null_index+2])
+    # print(df.loc[first_null_index+3])
 
-df["tmin_roll"] = (
-    df["TMIN"]
-    .rolling(window=7, center=True, min_periods=1)
-    .mean()
-)
-
-df["tmax_roll"] = (
-    df["TMAX"]
-    .rolling(window=7, center=True, min_periods=1)
-    .mean()
-)
+    df.to_csv(processed_path, index=False)
 
 
-df["TMIN"] = df["TMIN"].fillna(df["tmin_roll"])
-df["TMAX"] = df["TMAX"].fillna(df["tmax_roll"])
-
-df = df.drop(columns=["tmin_roll", "tmax_roll"])
-df.isna().sum()
-#In[5]
-df.to_csv('../../data/processed/Long_Island_Weather_Cleaned.csv', index=False)
-
-# %%
+if __name__ == "__main__":
+    main()
