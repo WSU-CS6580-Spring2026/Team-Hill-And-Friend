@@ -63,3 +63,12 @@ conda env export --no-builds > environment.yml
 ```
 
 - Ensure the file was updated properly
+
+---
+#  Sprint 2
+
+### Data cleaning
+- We split the team into two groups. We are currently prioritizing cleaning for the LIRR dataset and the weather dataset independently within the src/data_processing folder.
+- Once we have the datasets cleaned, ideally we'll be transferring both the raw and processed datasets to be online so that it will more accessible.
+- We will need to rerun our EDA and potentially expand upon it for further analysis. Saving result images into a results folder.
+- After we will update our data dictionary with the columns we plan to use for our machine learning models.
