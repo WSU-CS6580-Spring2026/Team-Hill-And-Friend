@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 def main() -> None:
     base_dir = Path(__file__).resolve().parents[2]
@@ -19,10 +20,12 @@ def main() -> None:
     df['PRCP'] = df['PRCP'].fillna(0)
     df['SNOW'] = df['SNOW'].fillna(0)
     df['SNWD'] = df['SNWD'].fillna(0)
-    df['PRCP_TOTAL'] = df['PRCP'] + df['SNOW']
+
+    #Create a new column for total precipitation, which is the sum of rain and snow (Round to 2 decimal places)
+    df['PRCP_TOTAL'] = (df['PRCP'] + df['SNOW']).round(2)
 
     #Drop these columns, wont be used in our prediction
-    df = df.drop(columns=['WESD', 'WT05', 'TOBS'])
+    df = df.drop(columns=['WESD', 'WT05', 'TOBS', 'STATION', 'NAME'])
 
     #Uncomment for testing averages
     # first_null_index = df['TMIN'].isnull().idxmax()
@@ -40,15 +43,16 @@ def main() -> None:
     df["tmin_roll"] = (
         df["TMIN"]
         .rolling(window=7, center=True, min_periods=1)
-        .mean()
+        .mean().apply(np.ceil)
     )
 
     df["tmax_roll"] = (
         df["TMAX"]
         .rolling(window=7, center=True, min_periods=1)
-        .mean()
+        .mean().apply(np.ceil)
     )
 
+    #Fill in missing values with the rolling average
     df["TMIN"] = df["TMIN"].fillna(df["tmin_roll"])
     df["TMAX"] = df["TMAX"].fillna(df["tmax_roll"])
 
