@@ -101,6 +101,7 @@ GHCN-Daily is the world’s largest archive of daily weather observations, conta
 |-------|-------------|
 | PRCP | Primary precipitation (rain) field. |
 | WT16 | Rain observed. |
+| WT05 | Hail observed. |
 | WT17 | Freezing rain observed. |
 | WT03 | Thunder observed. |
 
