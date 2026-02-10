@@ -27,16 +27,6 @@ def main() -> None:
     #Drop these columns, wont be used in our prediction
     df = df.drop(columns=['WESD', 'WT05', 'TOBS', 'STATION', 'NAME'])
 
-    #Uncomment for testing averages
-    # first_null_index = df['TMIN'].isnull().idxmax()
-    # print(df.loc[first_null_index-3])
-    # print(df.loc[first_null_index-2])
-    # print(df.loc[first_null_index-1])
-    # print(df.loc[first_null_index])
-    # print(df.loc[first_null_index+1])
-    # print(df.loc[first_null_index+2])
-    # print(df.loc[first_null_index+3])
-
     #If a value is missing for TMAX or TMIN, average it
     df = df.sort_values("DATE")
 
@@ -58,15 +48,6 @@ def main() -> None:
 
     df = df.drop(columns=["tmin_roll", "tmax_roll"])
     print(df.isna().sum())
-
-    #Uncomment for testing averages
-    # print(df.loc[first_null_index-3])
-    # print(df.loc[first_null_index-2])
-    # print(df.loc[first_null_index-1])
-    # print(df.loc[first_null_index])
-    # print(df.loc[first_null_index+1])
-    # print(df.loc[first_null_index+2])
-    # print(df.loc[first_null_index+3])
 
     df.to_csv(processed_path, index=False)
 
