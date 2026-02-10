@@ -15,55 +15,41 @@ def main() -> None:
     # 1) Load raw data
     df = pd.read_csv(RAW_PATH, low_memory=False)
 
-    # 2) Parse datetimes (needed to derive service_date cleanly)
-    time_fmt = "%m/%d/%Y %I:%M:%S %p"
-    df["depart_dt"] = pd.to_datetime(df["Depart Time"], format=time_fmt, errors="coerce")
-    df["arrive_dt"] = pd.to_datetime(df["Arrive Time"], format=time_fmt, errors="coerce")
+    # 2) Remove cancelled / partial cancel trips
+    df = df[~df['Status'].isin(['Partial Cancel', 'Cancelled'])]
 
-    # Convert Service Date to a true date-only field (python datetime.date)
-    # (This will become `service_date` after we standardize column names.)
-    df["Service Date"] = pd.to_datetime(df["Service Date"], errors="coerce").dt.date
-
-    # 3) (REMOVED) cross-midnight fix — per your request
-
-    # 4) Keep only "Late" rows
-    df = df[df["Status"].astype(str).str.strip().str.lower() == "late"].copy()
-
-    # 5) Minutes Late numeric (but DO NOT drop NA/negative rows — per your request)
-    df["Minutes Late"] = pd.to_numeric(df["Minutes Late"], errors="coerce")
-
-    # 6) Hard cap outliers at 200 minutes (only affects non-null values)
-    df["Minutes Late"] = df["Minutes Late"].clip(upper=OUTLIER_CAP_MINUTES)
-
-    # 7) Standardize column names (spaces → underscores, lowercase)
+    # 3) Standardize column names (spaces → underscores, lowercase)
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
 
-    # 8) Drop columns (this is where you wanted to do it)
-    cols_to_drop = [
-        "depart_time",
-        "arrive_time",
-        "period",
-        "status",
-        "delay_category",
-        "depart_dt",
-        "arrive_dt",
-        "hour",
-        "dow",
-        "month",
-        "is_weekend",
-    ]
-    df = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
+    # 4) Convert service date to date-only field
+    df["service_date"] = pd.to_datetime(df["service_date"], errors="coerce").dt.date
 
-    # 9) Save cleaned output (overwrites each run)
+    # 5) Convert minutes_late numeric and cap outliers
+    df["minutes_late"] = pd.to_numeric(df["minutes_late"], errors="coerce").clip(upper=OUTLIER_CAP_MINUTES)
+
+    # 6) Rename key columns
+    df = df.rename(
+        columns={
+            "train": "train",
+            "branch": "branch",
+            "depart_station": "depart_station",
+            "arrive_station": "arrive_station",
+        }
+    )
+
+    # 7) Keep only the columns needed for training
+    df = df[["service_date", "train", "branch", "depart_station", "arrive_station", "minutes_late"]]
+
+    # 8) Save cleaned output
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUT_PATH, index=False)
 
-    # 10) Print summary
+    # 9) Print summary
     print("Saved cleaned train data to:", OUT_PATH)
     print("Rows:", len(df))
     print("Hard outlier cap (minutes):", OUTLIER_CAP_MINUTES)
-    if "minutes_late" in df.columns:
-        print(df["minutes_late"].describe(percentiles=[0.95, 0.99]))
+    print(df.head(5))
+    print("Missing minutes_late:", df["minutes_late"].isna().sum())
 
 
 if __name__ == "__main__":
