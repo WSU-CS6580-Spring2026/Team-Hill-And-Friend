@@ -1,0 +1,126 @@
+Albertson
+Amagansett
+Amityville
+Atlantic Terminal
+Auburndale
+Babylon
+Baldwin
+Bay Shore
+Bayside
+Bellerose
+Bellmore
+Bellport
+Belmont Park
+Bethpage
+Brentwood
+Bridgehampton
+Broadway
+Carle Place
+Cedarhurst
+Central Islip
+Centre Avenue
+Cold Spring Harbor
+Copiague
+Country Life Press
+Deer Park
+Douglaston
+East Hampton
+East New York
+East Rockaway
+East Williston
+Elmont-UBS Arena
+Far Rockaway
+Farmingdale
+Floral Park
+Flushing-Main Street
+Forest Hills
+Freeport
+Garden City
+Gibson
+Glen Cove
+Glen Head
+Glen Street
+Grand Central Madison
+Great Neck
+Great River
+Greenlawn
+Greenport
+Greenvale
+Hampton Bays
+Hempstead
+Hempstead Gardens
+Hewlett
+Hicksville
+Hollis
+Hunterspoint Avenue
+Huntington
+Inwood
+Island Park
+Islip
+Jamaica
+Kew Gardens
+Kings Park
+Lakeview
+Laurelton
+Lawrence
+Lindenhurst
+Little Neck
+Locust Manor
+Locust Valley
+Long Beach
+Long Island City
+Lynbrook
+Malverne
+Manhasset
+Massapequa
+Massapequa Park
+Mastic-Shirley
+Mattituck
+Medford
+Merillon Avenue
+Merrick
+Mets-Willets Point
+Mineola
+Montauk
+Murray Hill
+Nassau Boulevard
+New Hyde Park
+Northport
+Nostrand Avenue
+Oakdale
+Oceanside
+Oyster Bay
+Patchogue
+Penn Station
+Pinelawn
+Plandome
+Port Jefferson
+Port Washington
+Queens Village
+Riverhead
+Rockville Centre
+Ronkonkoma
+Rosedale
+Roslyn
+Sayville
+Sea Cliff
+Seaford
+Smithtown
+Southampton
+Southold
+Speonk
+St. Albans
+St. James
+Stewart Manor
+Stony Brook
+Syosset
+Valley Stream
+Wantagh
+West Hempstead
+Westbury
+Westhampton
+Westwood
+Woodmere
+Woodside
+Wyandanch
+Yaphank
