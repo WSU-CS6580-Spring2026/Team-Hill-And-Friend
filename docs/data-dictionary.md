@@ -1,10 +1,14 @@
-
 # Data Dictionary  
 **Long Island Rail Road Delays & Weather (GHCN-Daily)**
 
+This document describes the raw input datasets and the processed outputs generated during Sprint 2.
+
+Raw input files are stored in `data/raw/`.  
+Cleaned and merged outputs are generated locally and saved to `data/processed/`.
+
 ---
 
-#  Dataset 1: TA LIRR Delays — Beginning 2010
+# Dataset 1: MTA LIRR Delays — Beginning 2010 (RAW)
 
 **Source:** Metropolitan Transportation Authority (NY Open Data)  
 **Coverage:** New York City & Long Island  
@@ -14,112 +18,191 @@
 **Rows:** ~254,000  
 **Columns:** 11  
 
+**File Location:** `data/raw/MTA_LIRR_Delays__Beginning_2010_20260122.csv`
+
 **Description:**  
-This dataset lists all LIRR trains that are delayed, including whether a train was cancelled, partially cancelled, or late, the rounded delay minutes, the delay cause category, train number, and the branch the train operates on.
+Raw dataset listing LIRR trains with delay status, delay minutes (when applicable), delay cause category, train number, and branch.
 
 ---
 
-## Table: `lirr_delays`
+## Table: `lirr_delays_raw`
 
-| Column Name | API Field Name | Data Type | Description |
-|------------|----------------|-----------|-------------|
-| Service Date | service_date | Floating Timestamp | The day on which the delay occurred. |
-| Train | train | Text | The number of the train. |
-| Branch | branch | Text | The branch the train operates on. |
-| Depart Station | depart_station | Text | The station the train was scheduled to depart from. |
-| Depart Time | depart_time | Floating Timestamp | The scheduled departure datetime. |
-| Arrive Station | arrive_station | Text | The station the train was scheduled to arrive at. |
-| Arrive Time | arrive_time | Floating Timestamp | The scheduled arrival datetime. |
-| Period | period | Text | Indicates whether the train is Peak or Off-Peak. |
-| Status | status | Text | Train status (Late, Cancelled, Partially Cancelled). |
-| Minutes Late | minutes_late | Number | Blank if < 6 minutes late; populated if ≥ 6 minutes late. |
-| Delay Category | delay_category | Text | Category describing the cause of the delay. |
+| Column Name | Type | Description |
+|------------|------|-------------|
+| Service Date | date/datetime | Day on which the delay occurred |
+| Train | string | Train identifier/number |
+| Branch | string | LIRR branch name |
+| Depart Station | string | Scheduled departure station |
+| Depart Time | datetime string | Scheduled departure timestamp |
+| Arrive Station | string | Scheduled arrival station |
+| Arrive Time | datetime string | Scheduled arrival timestamp |
+| Period | string | Peak vs Off-Peak |
+| Status | string | Late, Cancelled, Partially Cancelled |
+| Minutes Late | float | Minutes late (blank if < 6 minutes) |
+| Delay Category | string | Delay cause category |
 
 ---
 
 ## LIRR Notes
-- Minutes Late only appears when delay ≥ 6 minutes.  
-- Cancelled / Partial Cancel trains may not have meaningful delay minutes.  
-- Dataset is published on a one-week lag.  
+- Minutes Late is typically only populated when delay ≥ 6 minutes  
+- Cancelled/Partial Cancel rows may not have meaningful delay values  
+- Dataset is published on a short processing lag
 
 ---
 
-#  Dataset 2: GHCN-Daily Weather Data
+# Dataset 2: Long Island Weather Data (RAW)
 
-**Source:** NOAA / NCEI — Global Historical Climatology Network (Daily)  
-**Coverage:** Global land stations (100,000+)  
+**Source:** NOAA / NCEI — Daily Station Observations  
+**Granularity:** One row per day  
 **Update Frequency:** Daily  
-**Granularity:** One row per station per day  
+
+**File Location:** `data/raw/Long_Island_Weather.csv`
 
 **Description:**  
-GHCN-Daily is the world’s largest archive of daily weather observations, containing temperature, precipitation, snowfall, snow depth, wind, evaporation, cloudiness, soil temperature, sunshine, and weather event indicators.
+Raw daily weather observations for a Long Island station including precipitation, snowfall, snow depth, and temperatures.
 
 ---
 
-##  Core Record Structure
+## Table: `long_island_weather_raw`
 
-| Column | Data Type | Description |
-|-------|------------|-------------|
-| station | Text | NOAA station identification code. |
-| station_name* | Text | Station name (optional output field). |
-| latitude* | Number | Decimal degrees latitude. |
-| longitude* | Number | Decimal degrees longitude. |
-| elevation* | Number | Elevation above mean sea level (meters). |
-| date | Date | Observation date (YYYYMMDD or ISO). |
-
----
-
-##  Core Climate Variables
-
-| Field | Description |
-|-------|-------------|
-| PRCP | Total daily precipitation (rain + melted snow). |
-| SNOW | Daily snowfall. |
-| SNWD | Snow depth. |
-| TMAX | Daily maximum temperature. |
-| TMIN | Daily minimum temperature. |
+| Column Name | Type | Description |
+|-------------|------|-------------|
+| STATION | string | NOAA station id |
+| NAME | string | Station name |
+| DATE | date/datetime | Observation date |
+| PRCP | float | Daily precipitation |
+| SNOW | float | Daily snowfall |
+| SNWD | float | Snow depth |
+| TMAX | float | Daily maximum temperature |
+| TMIN | float | Daily minimum temperature |
+| TOBS | float | Temperature at observation time (if present) |
+| WESD | float | Water equivalent of snow on ground (if present) |
+| WT05 | float/bool | Weather event indicator (if present) |
 
 ---
 
-##  Common Additional Variables
+# Processed Outputs (Sprint 2)
 
-| Field | Description |
-|-------|-------------|
-| AWND | Average daily wind speed. |
-| TOBS | Temperature at time of observation. |
-| WSFG | Peak wind gust speed. |
-| WDFG | Direction of peak wind gust. |
-| WESD | Water equivalent of snow on ground. |
-| PSUN | Percent of possible sunshine. |
-| TSUN | Daily sunshine total (minutes). |
+Processed datasets are generated locally by running the cleaning and merge scripts.
+These outputs are saved in `data/processed/` and are not committed to GitHub.
 
 ---
 
-##  Rain & Event Indicators
+# Dataset 3: LIRR Delays (CLEANED OUTPUT)
 
-| Field | Description |
-|-------|-------------|
-| PRCP | Primary precipitation (rain) field. |
-| WT16 | Rain observed. |
-| WT05 | Hail observed. |
-| WT17 | Freezing rain observed. |
-| WT03 | Thunder observed. |
+**File:** `data/processed/lirr_train_clean_late.csv`  
+**Generated by:** `src/Data_Processing/clean_train.py`
+
+**Description:**  
+Cleaned LIRR delay dataset restricted to late trains, with extreme outliers capped and only key fields retained for modeling.
 
 ---
 
-##  Flags & Attributes
+## Table: `lirr_train_clean_late`
 
-Each element may have companion columns:
-- Measurement Flag  
-- Quality Flag  
-- Source Flag  
-- Observation Time  
+| Column Name | Type | Description |
+|-------------|------|-------------|
+| service_date | string (date-formatted) | Service date |
+| train | string | Train identifier/number |
+| branch | string | LIRR branch name |
+| depart_station | string | Scheduled departure station |
+| arrive_station | string | Scheduled arrival station |
+| minutes_late | float | Minutes late (capped at 200) |
 
 ---
 
-## Integration Notes
+### Processing Notes (Train)
+- Filters to rows where `Status == "Late"`
+- Converts Service Date to date-only format
+- Caps extreme delays at 200 minutes
+- Drops unused timestamp and status columns
 
-- Join key: `lirr_delays.service_date` ↔ `ghcn_daily.date`  
-- Most useful weather fields: PRCP, TMAX, TMIN, SNOW, SNWD, AWND, WT16, WT17  
-- Common derived fields: rain_flag, heavy_rain_flag, freezing_rain_flag  
+---
 
+# Dataset 4: Long Island Weather (CLEANED OUTPUT)
+
+**File:** `data/processed/Long_Island_Weather_Cleaned.csv`  
+**Generated by:** `src/Data_Processing/clean_weather.py`
+
+**Description:**  
+Cleaned daily weather dataset with missing values handled and selected features retained.
+
+---
+
+## Table: `long_island_weather_cleaned`
+
+| Column Name | Type | Description |
+|-------------|------|-------------|
+| STATION | string | NOAA station id |
+| NAME | string | Station name |
+| DATE | string (date-formatted) | Observation date |
+| PRCP | float | Daily precipitation |
+| SNOW | float | Daily snowfall |
+| SNWD | float | Snow depth |
+| TMAX | float | Daily max temperature |
+| TMIN | float | Daily min temperature |
+| PRCP_TOTAL | float | PRCP + SNOW |
+
+---
+
+### Processing Notes (Weather)
+- Fills missing PRCP/SNOW/SNWD with 0
+- Uses rolling averages for temperature imputation (per script)
+- Drops sparse/unneeded fields
+
+---
+
+# Dataset 5: Merged LIRR + Weather Dataset (PROCESSED)
+
+**File:** `data/processed/merged_lirr_weather.csv`  
+**Generated by:** merge pipeline script  
+
+**Description:**  
+Merged dataset combining cleaned LIRR delay records with cleaned daily weather observations.
+
+---
+
+## Table: `merged_lirr_weather` (data/processed)
+
+| Column Name | Type | Description |
+|-------------|------|-------------|
+| train | string | Train identifier/number |
+| branch | string | LIRR branch name |
+| depart_station | string | Scheduled departure station |
+| arrive_station | string | Scheduled arrival station |
+| minutes_late | float | Minutes late (capped at 200) |
+| STATION | string | NOAA station id |
+| NAME | string | Weather station name |
+| DATE | string (date-formatted) | Observation date |
+| PRCP | float | Daily precipitation |
+| SNOW | float | Daily snowfall |
+| SNWD | float | Snow depth |
+| TMAX | float | Daily maximum temperature |
+| TMIN | float | Daily minimum temperature |
+| PRCP_TOTAL | float | Combined precipitation and snowfall |
+
+---
+
+## Merge Details
+
+- Join keys: `service_date` (train) ↔ `DATE` (weather)
+- Join type: Right join (weather-dominant)
+- Output includes columns from both cleaned datasets
+
+**Notes**
+- Some rows may contain missing train data on weather-only days
+- Each row represents one calendar day with associated weather and (if available) train delay information
+- Intended for exploratory analysis and predictive modeling
+
+---
+
+# Integration Notes
+
+**Primary join key:**  
+`lirr_train_clean_late.service_date` ↔ `long_island_weather_cleaned.DATE`
+
+**Goal:**  
+Attach same-day weather conditions to train delay records for prediction.
+
+**Implementation Note:**  
+During analysis, both date fields should be parsed as dates (e.g., `pd.to_datetime(...).dt.date`) to ensure consistent matching.
