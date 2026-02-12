@@ -2,55 +2,82 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-def main() -> None:
-    base_dir = Path(__file__).resolve().parents[2]
+def clean_weather(
+    input_path: Path,
+    output_path: Path,
+    rolling_window: int = 7
+) -> pd.DataFrame:
+    """
+    Cleans Long Island weather data.
 
-    raw_path = base_dir / "data" / "raw" / "Long_Island_Weather.csv"
-    processed_dir = base_dir / "data" / "processed"
-    processed_path = processed_dir / "Long_Island_Weather_Cleaned.csv"
+    Parameters
+    ----------
+    input_path : Path
+        Path to raw weather CSV
+    output_path : Path
+        Path to save cleaned weather CSV
+    rolling_window : int
+        Window size for rolling average for missing TMIN/TMAX values
 
-    df = pd.read_csv(raw_path, parse_dates=["DATE"])
-    print(df.head())
+    Returns
+    -------
+    pd.DataFrame
+        Cleaned weather DataFrame
+    """
+    # Load CSV
+    df = pd.read_csv(input_path, parse_dates=["DATE"])
 
-    df.info()
+    # Convert DATE to normalized datetime64
+    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce").dt.normalize()
 
-    print(df.isna().sum())
+    # Fill missing precipitation/snow with 0
+    df[['PRCP', 'SNOW', 'SNWD']] = df[['PRCP', 'SNOW', 'SNWD']].fillna(0)
 
-    #If values are missing for PRCP, SNOW, or SNWD assume there is none, put 0 in
-    df['PRCP'] = df['PRCP'].fillna(0)
-    df['SNOW'] = df['SNOW'].fillna(0)
-    df['SNWD'] = df['SNWD'].fillna(0)
+    # Total precipitation
+    df["PRCP_TOTAL"] = (df["PRCP"] + df["SNOW"]).round(2)
 
-    #Create a new column for total precipitation, which is the sum of rain and snow (Round to 2 decimal places)
-    df['PRCP_TOTAL'] = (df['PRCP'] + df['SNOW']).round(2)
+    # Drop unused columns if they exist
+    drop_cols = ["WESD", "WT05", "TOBS", "STATION", "NAME"]
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
-    #Drop these columns, wont be used in our prediction
-    df = df.drop(columns=['WESD', 'WT05', 'TOBS', 'STATION', 'NAME'])
-
-    #If a value is missing for TMAX or TMIN, average it
+    # Sort by date
     df = df.sort_values("DATE")
 
-    df["tmin_roll"] = (
-        df["TMIN"]
-        .rolling(window=7, center=True, min_periods=1)
-        .mean().apply(np.ceil)
-    )
+    # Rolling averages for missing TMIN/TMAX
+    df["tmin_roll"] = df["TMIN"].rolling(window=rolling_window, center=True, min_periods=1).mean().apply(np.ceil)
+    df["tmax_roll"] = df["TMAX"].rolling(window=rolling_window, center=True, min_periods=1).mean().apply(np.ceil)
 
-    df["tmax_roll"] = (
-        df["TMAX"]
-        .rolling(window=7, center=True, min_periods=1)
-        .mean().apply(np.ceil)
-    )
-
-    #Fill in missing values with the rolling average
     df["TMIN"] = df["TMIN"].fillna(df["tmin_roll"])
     df["TMAX"] = df["TMAX"].fillna(df["tmax_roll"])
 
+    # Drop temporary rolling columns
     df = df.drop(columns=["tmin_roll", "tmax_roll"])
-    print(df.isna().sum())
 
-    df.to_csv(processed_path, index=False)
+    # Enforce dtypes
+    df = df.astype({
+        "PRCP": "float32",
+        "SNOW": "float32",
+        "SNWD": "float32",
+        "PRCP_TOTAL": "float32",
+        "TMIN": "float32",
+        "TMAX": "float32"
+    })
 
+    # Save cleaned CSV
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
+
+    return df
 
 if __name__ == "__main__":
-    main()
+    BASE_DIR = Path(__file__).resolve().parents[2]
+
+    raw_path = BASE_DIR / "data/raw/Long_Island_Weather.csv"
+    interim_path = BASE_DIR / "data/interim/Long_Island_Weather_Cleaned.csv"
+
+    df_clean = clean_weather(raw_path, interim_path)
+
+    print("Weather data cleaned and saved to:", interim_path)
+    print("Rows:", len(df_clean))
+    print("Missing values after cleaning:\n", df_clean.isna().sum())
+    print(df_clean.head())
