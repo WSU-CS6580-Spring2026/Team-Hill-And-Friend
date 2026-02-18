@@ -142,6 +142,7 @@ Cleaned daily weather dataset with missing values handled and selected features 
 | TMAX | float | Daily max temperature |
 | TMIN | float | Daily min temperature |
 | PRCP_TOTAL | float | PRCP + SNOW |
+| TAVG | float | Averaged Temperature between TMIN and TMAX |
 
 ---
 
@@ -167,12 +168,9 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 | Column Name | Type | Description |
 |-------------|------|-------------|
 | train | string | Train identifier/number |
-| branch | string | LIRR branch name |
 | depart_station | string | Scheduled departure station |
 | arrive_station | string | Scheduled arrival station |
 | minutes_late | float | Minutes late (capped at 200) |
-| STATION | string | NOAA station id |
-| NAME | string | Weather station name |
 | DATE | string (date-formatted) | Observation date |
 | PRCP | float | Daily precipitation |
 | SNOW | float | Daily snowfall |
@@ -180,6 +178,7 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 | TMAX | float | Daily maximum temperature |
 | TMIN | float | Daily minimum temperature |
 | PRCP_TOTAL | float | Combined precipitation and snowfall |
+| TAVG | float | Averaged Temperature between TMIN and TMAX |
 
 ---
 
@@ -193,7 +192,7 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 - Some rows may contain missing train data on weather-only days
 - Each row represents one calendar day with associated weather and (if available) train delay information
 - Intended for exploratory analysis and predictive modeling
-
+- PRCP_TOTAL and TAVG are both derived features using the weather data
 ---
 
 # Integration Notes

@@ -53,6 +53,10 @@ def clean_weather(
     # Drop temporary rolling columns
     df = df.drop(columns=["tmin_roll", "tmax_roll"])
 
+    # Derived feature TAVG to get the average between TMIN and TMAX
+    df['TAVG'] = df[['TMIN','TMAX']].mean(axis=1)
+    df.head()
+
     # Enforce dtypes
     df = df.astype({
         "PRCP": "float32",
@@ -60,7 +64,8 @@ def clean_weather(
         "SNWD": "float32",
         "PRCP_TOTAL": "float32",
         "TMIN": "float32",
-        "TMAX": "float32"
+        "TMAX": "float32",
+        "TAVG": "float32"
     })
 
     # Save cleaned CSV
