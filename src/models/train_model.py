@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from joblib import dump
 from pandas.errors import ParserError
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -87,6 +88,12 @@ def parse_args() -> argparse.Namespace:
         default="data/processed/linear_regression_metrics.json",
         help="Output path for linear regression metrics JSON.",
     )
+    parser.add_argument(
+        "--model-out",
+        type=str,
+        default="models/linear_regression_pipeline.joblib",
+        help="Output path for serialized trained model.",
+    )
     return parser.parse_args()
 
 
@@ -145,6 +152,7 @@ def train_linear_regression(
     target_col: str,
     predictions_out: Path,
     metrics_out: Path,
+    model_out: Path,
 ) -> None:
     # Stage 2: train/evaluate linear regression from pre-split CSVs.
     if not train_path.exists():
@@ -224,8 +232,10 @@ def train_linear_regression(
 
     predictions_out.parent.mkdir(parents=True, exist_ok=True)
     metrics_out.parent.mkdir(parents=True, exist_ok=True)
+    model_out.parent.mkdir(parents=True, exist_ok=True)
 
     predictions_df.to_csv(predictions_out, index=False)
+    dump(model, model_out)
 
     # Save summary metrics for quick tracking/reporting.
     metrics = {
@@ -244,6 +254,7 @@ def train_linear_regression(
     print(f"R2:   {r2:.4f}")
     print(f"Predictions saved to: {predictions_out}")
     print(f"Metrics saved to: {metrics_out}")
+    print(f"Model saved to: {model_out}")
 
 
 def main() -> None:
@@ -257,6 +268,7 @@ def main() -> None:
     test_out = (base_dir / args.test_out).resolve()
     predictions_out = (base_dir / args.predictions_out).resolve()
     metrics_out = (base_dir / args.metrics_out).resolve()
+    model_out = (base_dir / args.model_out).resolve()
 
     split_dataset(
         input_path=input_path,
@@ -273,6 +285,7 @@ def main() -> None:
         target_col=args.target,
         predictions_out=predictions_out,
         metrics_out=metrics_out,
+        model_out=model_out,
     )
 
 
