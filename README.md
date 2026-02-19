@@ -72,3 +72,31 @@ conda env export --no-builds > environment.yml
 - Once we have the datasets cleaned, ideally we'll be transferring both the raw and processed datasets to be online so that it will more accessible.
 - We will need to rerun our EDA and potentially expand upon it for further analysis. Saving result images into a results folder.
 - After we will update our data dictionary with the columns we plan to use for our machine learning models.
+
+---
+# Model Training
+
+Use the training script to split processed data, train a Linear Regression model, generate predictions, and save the trained model artifact.
+
+## Run
+```bash
+python src/train_model.py
+```
+
+## Default input/output
+- Input dataset: `data/processed/merged_lirr_weather.csv`
+- Predictions CSV: `data/processed/linear_regression_predictions.csv`
+- Trained model: `models/linear_regression_pipeline.joblib`
+
+The script creates output folders automatically (including `models/` if it does not exist).
+
+## Optional arguments
+```bash
+python src/train_model.py \
+  --input data/processed/merged_lirr_weather.csv \
+  --target minutes_late \
+  --test-size 0.2 \
+  --random-state 42 \
+  --predictions-out data/processed/linear_regression_predictions.csv \
+  --model-out models/linear_regression_pipeline.joblib
+```
