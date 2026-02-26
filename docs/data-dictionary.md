@@ -202,7 +202,12 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 | TMIN | float | Daily minimum temperature |
 | PRCP_TOTAL | float | Combined precipitation and snowfall |
 | TAVG | float | Averaged Temperature between TMIN and TMAX |
-
+| cos_month | float | Cyclical encoding of month |
+| cos_day | float | Cyclical encoding of day |
+| cos_dow | float | Cyclical encoding of dow |
+| rolling_delay3 | float | average delay over lasting days (3) |
+| rolling_delay7 | float | average delay over lasting days (7) |
+| total_prcp3 | float | total precipitation of last 3 day sum |
 ---
 
 ## Merge Details
