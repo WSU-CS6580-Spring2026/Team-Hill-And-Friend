@@ -75,7 +75,7 @@ def clean_weather_legacy(
     return df
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parents[2]
+    BASE_DIR = Path(__file__).resolve().parents[3]
 
     raw_path = BASE_DIR / "data/raw/Long_Island_Weather.csv"
     interim_path = BASE_DIR / "data/interim/Long_Island_Weather_Cleaned_legacy.csv"
