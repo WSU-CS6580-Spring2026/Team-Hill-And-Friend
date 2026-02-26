@@ -182,6 +182,29 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 
 ---
 
+## Table: `Train/Test`
+
+| Column Name | Type | Description |
+|-------------|------|-------------|
+| train_mean | int | Mean of minutes late for Train |
+| depart_station_mean | int | Mean of minutes late for departure station |
+| arrive_station_mean | int | Mean of minutes late for arrival station |
+| station_pair_mean | int | Mean of minutes late for the combined depart and arrive stations |
+| minutes_late | float | Minutes late (capped at 200) |
+| year | int | year of delay |
+| month | int | month of delay |
+| day | int | day of delay |
+| dow | int | day of the week |
+| PRCP | float | Daily precipitation |
+| SNOW | float | Daily snowfall |
+| SNWD | float | Snow depth |
+| TMAX | float | Daily maximum temperature |
+| TMIN | float | Daily minimum temperature |
+| PRCP_TOTAL | float | Combined precipitation and snowfall |
+| TAVG | float | Averaged Temperature between TMIN and TMAX |
+
+---
+
 ## Merge Details
 
 - Join keys: `service_date` (train) ↔ `DATE` (weather)

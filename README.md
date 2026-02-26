@@ -74,9 +74,12 @@ conda env export --no-builds > environment.yml
 - After we will update our data dictionary with the columns we plan to use for our machine learning models.
 
 ---
-# Model Training
+#  Sprint 3
+### Model Training 
 
-Use the training script to split processed data, train a Linear Regression model, generate predictions, and save the trained model artifact.
+- Use the training script to split processed data, train a Linear Regression model, generate predictions, and save the trained model artifact.
+- Updated data dictionary with new features used for regression models.
+- Models.ipynb has our first run of models with visualizations, we also have auto_models.ipynb where we made a pipeline and have various models and the best outcomes.
 
 ## Run
 ```bash
