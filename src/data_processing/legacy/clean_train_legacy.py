@@ -86,7 +86,7 @@ def clean_lirr_train_legacy(
 
 
 if __name__ == "__main__":
-    BASE_DIR = Path(__file__).resolve().parents[2]
+    BASE_DIR = Path(__file__).resolve().parents[3]
 
     RAW_PATH = BASE_DIR / "data/raw/MTA_LIRR_Delays__Beginning_2010_20260122.csv"
     OUT_PATH = BASE_DIR / "data/interim/lirr_train_clean_legacy.csv"
