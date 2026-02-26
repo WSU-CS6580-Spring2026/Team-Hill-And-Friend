@@ -1,12 +1,11 @@
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 # Hard cap for extreme outliers
 OUTLIER_CAP_MINUTES = 200
 
 
-def clean_lirr_train(
+def clean_lirr_train_legacy(
     input_path: Path,
     output_path: Path,
     outlier_cap: int = OUTLIER_CAP_MINUTES,
@@ -55,12 +54,7 @@ def clean_lirr_train(
         .astype("float32")
     )
 
-    # 6) Perform Log Transformation on minutes_late
-    df["minutes_late"] = df["minutes_late"].apply(
-        lambda x: np.log1p(x) if pd.notnull(x) else x
-    )
-
-    # 7) Select + enforce dtypes
+    # 6) Select + enforce dtypes
     df = df[
         [
             "service_date",
@@ -79,16 +73,12 @@ def clean_lirr_train(
         }
     )
 
-    # 8) Create station_pair column and mean features   
-    df["station_pair"] = df["depart_station"] + "_" + df["arrive_station"]
-    all_cat_cols = ["train", "depart_station", "arrive_station", "station_pair"]
-    for col in all_cat_cols:
-        means = df.groupby(col, observed=True)["minutes_late"].mean()
-        df[col + "_mean"] = df[col].map(means)
+    # 7) convert categorical columns
+    categorical_cols = ["depart_station", "arrive_station"]
+    for col in categorical_cols:
+        df[col] = df[col].astype("category")
 
-    df.drop(columns=all_cat_cols, inplace=True)
-
-    # 9) Save cleaned output
+    # 8) Save cleaned output
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
 
@@ -99,9 +89,9 @@ if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parents[2]
 
     RAW_PATH = BASE_DIR / "data/raw/MTA_LIRR_Delays__Beginning_2010_20260122.csv"
-    OUT_PATH = BASE_DIR / "data/interim/lirr_train_clean.csv"
+    OUT_PATH = BASE_DIR / "data/interim/lirr_train_clean_legacy.csv"
 
-    df_clean = clean_lirr_train(RAW_PATH, OUT_PATH)
+    df_clean = clean_lirr_train_legacy(RAW_PATH, OUT_PATH)
 
     print("Saved cleaned train data to:", OUT_PATH)
     print("Rows:", len(df_clean))

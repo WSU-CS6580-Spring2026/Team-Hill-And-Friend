@@ -41,7 +41,39 @@ def merged_dataset(rolling_window: int = 7) -> "pd.DataFrame":
     # 3) Drop duplicate service_date column from train
     df_merged = df_merged.drop(columns=["service_date"])
 
-    # 4) Save merged dataset
+    # 4) Sort by date and drop rows with missing target
+    df_merged["DATE"] = pd.to_datetime(df_merged["DATE"])
+    df_merged = df_merged.sort_values("DATE")
+    df_merged = df_merged.dropna(subset=["minutes_late"]).reset_index(drop=True)
+
+    # 5) Filter to 2022 and later to reduce noise
+    df_merged = df_merged[df_merged["DATE"].dt.year >= 2022].reset_index(drop=True)
+
+    # 6) Time features
+    df_merged["year"]  = df_merged["DATE"].dt.year
+    df_merged["month"] = df_merged["DATE"].dt.month
+    df_merged["day"]   = df_merged["DATE"].dt.day
+    df_merged["dow"]   = df_merged["DATE"].dt.dayofweek
+
+    # 7) Clip outliers in minutes_late
+    y = df_merged["minutes_late"]
+    mean = y.mean()
+    std = y.std()
+    upper = mean + 3*std
+    y = y.clip(upper=upper)
+    df_merged = df_merged.loc[y.index].reset_index(drop=True)
+    
+    # 8) Cyclical encoding
+    df_merged["cos_month"] = np.cos(2 * np.pi * df_merged["month"]/12)
+    df_merged["cos_day"]   = np.cos(2 * np.pi * df_merged["day"]/31)
+    df_merged["cos_dow"]   = np.cos(2 * np.pi * df_merged["dow"]/7)
+    
+    # 9) Rolling delays
+    df_merged["rolling_delay3"] = df_merged["minutes_late"].rolling(3, min_periods=1).mean()
+    df_merged["rolling_delay7"] = df_merged["minutes_late"].rolling(7, min_periods=1).mean()
+    df_merged["total_prcp3"] = df_merged["PRCP_TOTAL"].rolling(3, min_periods=1).sum()
+
+    # 10) Save merged dataset
     MERGED_OUT.parent.mkdir(parents=True, exist_ok=True)
     df_merged.to_csv(MERGED_OUT, index=False)
 
