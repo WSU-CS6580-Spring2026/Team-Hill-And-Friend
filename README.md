@@ -79,7 +79,7 @@ conda env export --no-builds > environment.yml
 
 - Use the training script to split processed data, train a Linear Regression model, generate predictions, and save the trained model artifact.
 - Updated data dictionary with new features used for regression models.
-- Models.ipynb has our first run of models with visualizations, we also have auto_models.ipynb where we made a pipeline and hvae various models and the best outcomes.
+- Models.ipynb has our first run of models with visualizations, we also have auto_models.ipynb where we made a pipeline and have various models and the best outcomes.
 
 ## Run
 ```bash
