@@ -182,7 +182,7 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 
 ---
 
-## Table" `Train/Test`
+## Table: `Train/Test`
 
 | Column Name | Type | Description |
 |-------------|------|-------------|
