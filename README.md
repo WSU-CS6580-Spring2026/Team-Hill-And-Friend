@@ -77,9 +77,9 @@ conda env export --no-builds > environment.yml
 #  Sprint 3
 ### Model Training 
 
-- Use the training script to split processed data, train a Linear Regression model, generate predictions, and save the trained model artifact.
-- Updated data dictionary with new features used for regression models.
-- Models.ipynb has our first run of models with visualizations, we also have auto_models.ipynb where we made a pipeline and have various models and the best outcomes.
+- Use the training script to split processed data, with our best model we found saved into a .json file (as it saves the best for xgboost), generate predictions, and save the trained model artifact.
+- Updated data dictionary with new features used for our new models.
+- Models.ipynb has our first run of models with visualizations with some base models, we also have auto_models.ipynb where we made a pipeline and have various models and the best outcomes.
 
 ## Run
 ```bash
