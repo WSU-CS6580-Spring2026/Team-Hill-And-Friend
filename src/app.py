@@ -23,6 +23,7 @@ train_data = pd.read_csv(
     low_memory=False,
 )
 
+# Helper function to extract unique station names from a specified column, ensuring clean and sorted results
 def _unique_station_list(column: str) -> list[str]:
     subset = (
         train_data[column]
@@ -45,13 +46,14 @@ VALID_DATE_START = date(2025, 1, 1)
 VALID_DATE_END = date(2025, 12, 31)
 
 
+# Load the trained XGBoost model with caching to optimize performance; handle errors gracefully and provide feedback in the app
 @st.cache_resource
 def _load_xgb_model(path: str) -> xgb.Booster:
     booster = xgb.Booster()
     booster.load_model(path)
     return booster
 
-
+# Attempt to load the model and capture any errors that occur during loading, displaying them in the Streamlit app for user awareness
 model_load_error = None
 try:
     xgb_model = _load_xgb_model(str(MODEL_PATH))
@@ -64,6 +66,7 @@ except Exception as exc:
     model_load_error = str(exc)
     st.error(f"Unexpected error loading the model: {exc}")
 
+# Define the feature columns expected by the model, ensuring they match the training data schema exactly for accurate predictions
 FEATURE_COLUMNS = [
     "train_mean",
     "depart_station_mean",
@@ -88,7 +91,7 @@ FEATURE_COLUMNS = [
     "total_prcp3",
 ]
 
-
+# Helper functions for computing mean delay mappings, preprocessing inputs, building feature frames, and generating predictions based on the loaded model and user inputs
 def _compute_mean_map(df: pd.DataFrame, column: str) -> dict:
     series = df[column]
     valid = series.notna()
@@ -98,7 +101,7 @@ def _compute_mean_map(df: pd.DataFrame, column: str) -> dict:
     target = df.loc[valid, "minutes_late"]
     return target.groupby(keys, observed=True).mean().to_dict()
 
-
+# For station pairs, we need to combine the depart and arrive station into a single key to compute the mean delay for that specific route
 def _compute_station_pair_map(df: pd.DataFrame) -> dict:
     depart = df["depart_station"]
     arrive = df["arrive_station"]
@@ -111,7 +114,8 @@ def _compute_station_pair_map(df: pd.DataFrame) -> dict:
     target = df.loc[valid, "minutes_late"]
     return target.groupby(pair_keys, observed=True).mean().to_dict()
 
-
+# Load station mean mappings with caching to avoid redundant computations; 
+#   these mappings provide historical average delays for stations and station pairs, which are used as features in the prediction model
 @st.cache_data
 def _load_station_mean_mappings() -> dict:
     subset = train_data[["train", "depart_station", "arrive_station", "minutes_late"]].dropna(subset=["minutes_late"])
@@ -122,7 +126,7 @@ def _load_station_mean_mappings() -> dict:
     mapping["station_pair_mean"] = _compute_station_pair_map(subset)
     return mapping
 
-
+# Compute daily weather statistics with caching to optimize performance; these statistics are used to enrich the feature set for predictions based on the travel date
 @st.cache_data
 def _daily_weather_stats() -> pd.DataFrame:
     columns = ["DATE", "minutes_late", "PRCP", "SNOW", "SNWD", "TMAX", "TMIN", "PRCP_TOTAL", "TAVG"]
@@ -133,7 +137,8 @@ def _daily_weather_stats() -> pd.DataFrame:
     daily["total_prcp3"] = daily["PRCP_TOTAL"].rolling(3, min_periods=1).sum()
     return daily
 
-
+# Select the appropriate daily weather row for the given travel date, using the exact date if available or falling back to the most recent prior date; 
+#   this ensures that we have relevant weather features for the prediction even if the exact date is not in the dataset
 def _select_daily_row(travel_date: datetime, daily_df: pd.DataFrame) -> pd.Series:
     if travel_date in daily_df.index:
         return daily_df.loc[travel_date].fillna(0)
@@ -142,19 +147,22 @@ def _select_daily_row(travel_date: datetime, daily_df: pd.DataFrame) -> pd.Serie
         return daily_df.loc[earlier[-1]].fillna(0)
     return daily_df.iloc[0].fillna(0)
 
-
+# Normalize station keys by stripping whitespace and converting to string; 
+#   this ensures consistency when looking up mean delay values based on station names, which may have formatting issues in the dataset
 def _normalize_station_key(value: str) -> str:
     if value is None:
         return ""
     return str(value).strip()
 
-
+# Lookup mean delay values from the provided mapping, using a fallback value if the key is not found; 
+#   this allows the model to use historical averages for stations and station pairs even if the specific station or pair
 def _lookup_mean(mapping: dict, key: str, fallback: float) -> float:
     if not key:
         return fallback
     return float(mapping.get(key, fallback))
 
-
+# Safely convert a value to float, returning a default if the value is None, not convertible, or NaN; 
+#   this is used to ensure that weather features are numeric and valid for the model, even if the raw
 def _safe_float(value, default: float = 0.0) -> float:
     if value is None:
         return default
@@ -166,7 +174,8 @@ def _safe_float(value, default: float = 0.0) -> float:
         return default
     return number
 
-
+# Preprocess user inputs into a DataFrame format suitable for feature engineering; 
+#   this includes cleaning and validating the inputs, as well as ensuring they match the expected schema for the model
 def preprocess_inputs(arrive_station: str, depart_station: str, travel_date: date, rain: bool, snow: bool, temperature: float) -> pd.DataFrame:
     cleaned_date = pd.to_datetime(travel_date)
     cleaned_arrive = arrive_station.strip() if arrive_station else ""
@@ -182,7 +191,8 @@ def preprocess_inputs(arrive_station: str, depart_station: str, travel_date: dat
     })
     return input_data
 
-
+# Build the feature frame for the model based on the preprocessed user inputs and the historical data; 
+#   this involves looking up mean delay values for the stations and station pair, extracting weather features for the travel
 def build_feature_frame(input_data: pd.DataFrame) -> pd.DataFrame:
     if input_data.empty:
         raise ValueError("Input data is required to build feature frame.")
@@ -256,7 +266,8 @@ def build_feature_frame(input_data: pd.DataFrame) -> pd.DataFrame:
 
     return pd.DataFrame([feature_values], columns=FEATURE_COLUMNS)
 
-
+# Generate a delay prediction using the loaded XGBoost model and the constructed feature frame;
+#   this involves creating a DMatrix from the feature frame, running the prediction, and applying the appropriate
 def predict(feature_frame: pd.DataFrame, booster: xgb.Booster) -> float:
     if booster is None:
         raise ValueError("XGBoost model is not loaded.")
@@ -269,7 +280,7 @@ def predict(feature_frame: pd.DataFrame, booster: xgb.Booster) -> float:
     delay = np.expm1(estimate)
     return max(delay, 0.0)
 
-
+# Validate that the selected date is within the allowed range of 2025, providing user feedback in the Streamlit app if the date is invalid;
 def validate_date(selected_date: date) -> bool:
     """
     Validates that the selected date is within the allowed range of 2025.
@@ -289,7 +300,7 @@ def validate_date(selected_date: date) -> bool:
         return False
     return True
 
-
+# Build an index of available station categories based on the loaded mean mappings, which is used for validating user selections and providing warnings about missing historical data for certain stations or station pairs
 @st.cache_data
 def _station_category_index() -> dict[str, set[str]]:
     station_means = _load_station_mean_mappings()
@@ -299,7 +310,8 @@ def _station_category_index() -> dict[str, set[str]]:
         "pair": set(station_means.get("station_pair_mean", {}).keys()),
     }
 
-
+# Gather validation errors and warnings for the user inputs, including checks for valid date range, station selection, and model availability;
+#   this function centralizes all the validation logic and provides comprehensive feedback to the user in the Streamlit
 def _gather_prediction_validation(
     arrive_station: str,
     depart_station: str,
@@ -430,8 +442,11 @@ for error in validation_errors:
 # - extract any needed date features such as month, day, or weekday
 # - ensure preprocessing matches the training pipeline exactly
 
+# Determine whether the "Predict Delay" button should be disabled based on the presence of any validation errors; 
+#   if there are errors, the button is disabled and the user is prompted to fix the issues before running
 predict_disabled = bool(validation_errors)
 
+# When the user clicks the "Predict Delay" button, validate the inputs again and if valid, preprocess the inputs, build the feature frame, and generate a prediction using the loaded XGBoost model;
 if st.button("Predict Delay", disabled=predict_disabled):
     if predict_disabled:
         st.warning("Fix the highlighted issues before running a prediction.")
