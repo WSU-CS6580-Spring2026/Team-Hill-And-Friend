@@ -416,31 +416,32 @@ for warning in validation_warnings:
 for error in validation_errors:
     st.error(error)
 
-# TODO: rain input
-# - use a dropdown, radio button, or checkbox for rain
-# - decide whether model expects binary values like 0/1 or labels like Yes/No
-# - transform to the format used during training
+# Build a user input control for rain conditions; the checkbox returns a boolean
+# which can be directly passed into the preprocessing step
+rain = st.checkbox(
+    "Rain Expected",
+    value=False,
+    help="Select this if rain is expected on the travel date."
+)
 
-# TODO: snow input
-# - use a dropdown, radio button, or checkbox for snow
-# - decide whether model expects binary values like 0/1 or labels like Yes/No
-# - transform to the format used during training
+# Build a user input control for snow conditions; the checkbox returns a boolean
+# which can be used directly during feature construction
+snow = st.checkbox(
+    "Snow Expected",
+    value=False,
+    help="Select this if snow is expected on the travel date."
+)
 
-# TODO: temperature input
-# - use a numeric input or slider for temperature
-# - choose units consistent with the training data
-# - validate range if needed
-
-# TODO: collect all user inputs
-# - gather arrive station, depart station, date, rain, snow, and temperature
-# - assemble values into a dictionary or DataFrame
-# - ensure feature names, order, and types match the trained model input schema
-
-# TODO: preprocess date and categorical inputs
-# - encode arrive station and depart station as needed
-# - convert rain and snow inputs to model-ready values
-# - extract any needed date features such as month, day, or weekday
-# - ensure preprocessing matches the training pipeline exactly
+# Build a numeric input control so users can provide an average temperature
+# Temperature is entered in Fahrenheit to match the training dataset
+temperature = st.number_input(
+    "Average Temperature (°F)",
+    min_value=-20.0,
+    max_value=120.0,
+    value=50.0,
+    step=1.0,
+    help="Enter the expected average temperature in degrees Fahrenheit."
+)
 
 # Determine whether the "Predict Delay" button should be disabled based on the presence of any validation errors; 
 #   if there are errors, the button is disabled and the user is prompted to fix the issues before running
@@ -454,12 +455,12 @@ if st.button("Predict Delay", disabled=predict_disabled):
     with st.spinner("Generating delay prediction..."):
         try:
             input_frame = preprocess_inputs(
-                arrive_station,
-                depart_station,
-                travel_date,
-                rain=False,
-                snow=False,
-                temperature=None,
+                arrive_station=arrive_station,
+                depart_station=depart_station,
+                travel_date=travel_date,
+                rain=rain,
+                snow=snow,
+                temperature=temperature,
             )
             feature_frame = build_feature_frame(input_frame)
             delay_estimate = predict(feature_frame, xgb_model)
@@ -493,5 +494,3 @@ if st.button("Predict Delay", disabled=predict_disabled):
                     st.warning(status_reason)
                 else:
                     st.error(status_reason)
-
-# TODO: Update Readme with instructions for running the Streamlit app, including setup steps, how to launch the app, and any dependencies or requirements.

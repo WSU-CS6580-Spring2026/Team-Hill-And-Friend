@@ -103,3 +103,99 @@ python src/train_model.py \
   --predictions-out data/processed/linear_regression_predictions.csv \
   --model-out models/linear_regression_pipeline.joblib
 ```
+
+---
+
+# Sprint 4
+
+## Interactive Prediction App (Streamlit)
+
+For Sprint 4, we built an interactive **Streamlit application** that allows users to predict **LIRR train delays in real time** using the trained XGBoost model from Sprint 3.
+
+The application combines:
+
+- Historical train delay patterns
+- Station-level delay averages
+- Daily weather conditions
+
+Users can enter trip and weather information, and the application returns an estimated **delay in minutes**.
+
+This app serves as a **local MVP demonstration** of the model and does not require cloud deployment.
+
+---
+
+## Running the Streamlit App
+
+After activating the project environment, run the following command from the project root:
+
+```bash
+streamlit run src/app.py
+```
+
+Streamlit will start a local server and print a URL similar to:
+
+http://localhost:8501
+
+Open this link in your browser to use the application.
+
+---
+
+## App Inputs
+
+The app allows users to provide the following inputs:
+
+| Input | Description |
+|-------|-------------|
+| Depart Station | The LIRR station where the trip begins |
+| Arrive Station | The destination LIRR station |
+| Travel Date | Date of travel (must fall within 2025 due to weather data coverage) |
+| Rain Expected | Whether rain is expected during the trip |
+| Snow Expected | Whether snow is expected during the trip |
+| Average Temperature | Expected temperature in degrees Fahrenheit |
+
+These inputs are used to generate the same feature structure that the model was trained on.
+
+---
+
+## App Output
+
+After clicking Predict Delay, the application will display:
+
+- Predicted Delay (minutes late)
+- Comparison to the historical train delay average
+- A status indicator describing delay severity
+
+Possible delay statuses include:
+
+- On Schedule
+- Moderate Delay
+- Significant Delay
+
+This provides a simple way to explore how weather conditions and station combinations influence train delays.
+
+---
+
+## Model Integration
+
+The application loads the trained model generated in Sprint 3:
+
+`models/xgb_model.json`
+
+The model is loaded when the Streamlit app starts and reused for predictions to keep the interface responsive.
+
+### Prediction Pipeline
+
+The application performs the following steps when generating a prediction:
+
+1. Collect user inputs from the Streamlit interface
+2. Preprocess inputs to match the training feature structure
+3. Build the model feature frame
+4. Run the XGBoost prediction
+5. Convert the predicted value back to minutes late
+6. Display the result to the user
+
+This version is **fully valid Markdown** and will render cleanly on **GitHub README**.
+
+If you'd like, I can also show you a **cleaner README structure used in ML repositories (sections like Project Overview, Installation, Usage, Model, App, Results)** that professors tend to like a lot.
+
+
