@@ -17,11 +17,29 @@ import xgboost as xgb
 
 # Import arrive and depart station options from the dataset
 DATA_ROOT = Path(__file__).resolve().parents[1]
+
+legacy_dataset_path = DATA_ROOT / "data/processed/merged_lirr_weather_legacy.csv"
+default_dataset_path = DATA_ROOT / "data/processed/merged_lirr_weather.csv"
+
+dataset_path = legacy_dataset_path if legacy_dataset_path.exists() else default_dataset_path
+
 train_data = pd.read_csv(
-    DATA_ROOT / "data/processed/merged_lirr_weather.csv",
+    dataset_path,
     parse_dates=["DATE"],
     low_memory=False,
 )
+
+# Validate dataset schema so the app fails gracefully if the wrong dataset version is loaded
+required_station_columns = {"depart_station", "arrive_station", "minutes_late", "DATE"}
+missing_station_columns = required_station_columns - set(train_data.columns)
+
+if missing_station_columns:
+    st.error(
+        "The dataset loaded by the app is missing required columns: "
+        + ", ".join(sorted(missing_station_columns))
+        + ". Please use the legacy merged dataset with station-level columns."
+    )
+    st.stop()
 
 # Helper function to extract unique station names from a specified column, ensuring clean and sorted results
 def _unique_station_list(column: str) -> list[str]:
