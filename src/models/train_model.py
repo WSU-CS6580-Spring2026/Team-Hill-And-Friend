@@ -1,289 +1,201 @@
-# src/models/train_model.py
 from __future__ import annotations
 
 import argparse
-from html import parser
 import json
 from pathlib import Path
-import os
-from joblib import dump
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_absolute_percentage_error
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    mean_absolute_percentage_error,
+)
 
-RESULTS_DIR = "/doc/Results"
-MODEL_DIR = "models"
+TEST_YEAR = 2025
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Split processed merged dataset into train and test sets."
-    )
+    parser = argparse.ArgumentParser(description="Train XGBoost on LIRR delay data.")
     parser.add_argument(
-        "--input",
-        type=str,
-        default="data/processed/merged_lirr_weather.csv",
-        help="Path to processed merged dataset CSV.",
+        "--merged-data", type=str, default="data/processed/merged_lirr_weather.csv",
+        help="Merged + feature-engineered CSV (output of build_dataset.py)",
     )
-    parser.add_argument(
-        "--train-out",
-        type=str,
-        default="data/processed/train.csv",
-        help="Output path for train split CSV.",
-    )
-    parser.add_argument(
-        "--test-out",
-        type=str,
-        default="data/processed/test.csv",
-        help="Output path for test split CSV.",
-    )
-    parser.add_argument(
-        "--target",
-        type=str,
-        default="minutes_late",
-        help="Target column name.",
-    )
-    parser.add_argument(
-        "--random-state",
-        type=int,
-        default=42,
-        help="Random seed for reproducibility.",
-    )
-    parser.add_argument(
-        "--predictions-out",
-        type=str,
-        default="data/processed/xgb_predictions.csv",
-        help="Output path for XGBoost predictions CSV.",
-    )
-    parser.add_argument(
-        "--metrics-out",
-        type=str,
-        default="data/processed/xgb_metrics.json",
-        help="Output path for XGBoost metrics JSON.",
-    )
-    parser.add_argument(
-        "--model-out",
-        type=str,
-        default="models/xgb_model.json",
-        help="Output path for serialized trained model.",
-    )
-    parser.add_argument(
-        "--plots-out",
-        type=str,
-        default="docs/Results",
-        help="Directory to save plots and other results."
-    )
-
+    parser.add_argument("--model-out",       type=str, default="models/xgb_model.json")
+    parser.add_argument("--predictions-out", type=str, default="data/processed/xgb_predictions.csv")
+    parser.add_argument("--metrics-out",     type=str, default="data/processed/xgb_metrics.json")
+    parser.add_argument("--plots-out",       type=str, default="docs/Results")
+    parser.add_argument("--target",          type=str, default="minutes_late")
+    parser.add_argument("--test-year",       type=int, default=TEST_YEAR)
+    parser.add_argument("--random-state",    type=int, default=42)
+    parser.add_argument("--top-n-features",  type=int, default=20,
+                        help="Number of top features to show in importance plot")
     return parser.parse_args()
 
-def split_train_test(df: pd.DataFrame, target: str, test_year: int = 2025):
-    """
-    Split dataframe into train/test based on year in 'DATE' column.
-    Fills missing values with global mean of training target.
-    Drops DATE column for training.
-    Returns X_train, X_test, y_train, y_test, dates_test
-    """
-    y = df[target]
-    X = df.drop(columns=[target])
-    
-    # Train/test split
-    X_train = X[X["DATE"].dt.year < test_year].copy()
-    X_test  = X[X["DATE"].dt.year == test_year].copy()
-    
-    y_train = y.loc[X_train.index].copy()
-    y_test  = y.loc[X_test.index].copy()
-    
-    dates_test = X_test["DATE"].reset_index(drop=True)
-    
-    # Drop DATE before training
-    X_train.drop(columns=["DATE"], inplace=True)
-    X_test.drop(columns=["DATE"], inplace=True)
-    
-    # Fill unseen categories / missing values
-    global_mean = y_train.mean()
-    X_train.fillna(global_mean, inplace=True)
-    X_test.fillna(global_mean, inplace=True)
-    
-    # Reset indices
-    X_train = X_train.reset_index(drop=True)
-    X_test  = X_test.reset_index(drop=True)
-    y_train = y_train.reset_index(drop=True)
-    y_test  = y_test.reset_index(drop=True)
-    
-    return X_train, X_test, y_train, y_test, dates_test
 
-def train_xgb(X_train: pd.DataFrame, y_train: pd.Series, model_out: Path, **kwargs):
-    """
-    Train an XGBoost regressor and save the model for later use.
+def split_features_target(
+    df: pd.DataFrame,
+    target: str,
+    fill_value: float,
+):
+    """Separates features, target, and dates. Fills NaN with fill_value."""
+    dates = df["DATE"].reset_index(drop=True)
+    y     = df[target].reset_index(drop=True)
+    X     = df.drop(columns=[target, "DATE"]).reset_index(drop=True)
+    X     = X.fillna(fill_value)
+    return X, y, dates
 
-    Parameters:
-    - X_train: Training features
-    - y_train: Training target
-    - save_filename: Name of the file to save the trained model
-    - kwargs: Additional keyword arguments passed to xgb.XGBRegressor
 
-    Returns:
-    - model: Trained XGBoost model
-    """
-    # Train model
+def train_xgb(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    model_out: Path,
+    random_state: int = 42,
+) -> xgb.XGBRegressor:
     model = xgb.XGBRegressor(
-        objective='reg:squarederror',
-        n_estimators=100,
-        learning_rate=0.1,
+        objective="reg:squarederror",
+        n_estimators=200,
         max_depth=5,
-        random_state=42,
-        **kwargs
+        learning_rate=0.1,
+        random_state=random_state,
     )
     model.fit(X_train, y_train)
+    model_out.parent.mkdir(parents=True, exist_ok=True)
     model.save_model(model_out)
-    print(f"XGBoost model saved to {model_out}")
+    print(f"Model saved to {model_out}")
     return model
 
-def evaluate_model(y_test: pd.Series, y_pred: np.ndarray):
+
+def evaluate_model(
+    y_true: pd.Series,
+    y_pred: np.ndarray,
+) -> tuple[dict, np.ndarray, np.ndarray]:
     """
-    Evaluate predictions and return a dictionary of metrics.
-    Converts all values to Python floats for JSON compatibility.
+    Inverts log1p transform on both actual and predicted values before
+    computing all metrics, so reported numbers are in original minutes.
     """
-    # Convert back from log-transformation if needed
-    y_test = np.expm1(y_test)
-    y_pred = np.expm1(y_pred)
-    
+    y_true_orig = np.expm1(y_true)
+    y_pred_orig = np.expm1(y_pred)
+
     metrics = {
-        "MAE": float(mean_absolute_error(y_test, y_pred)),
-        "RMSE": float(np.sqrt(mean_squared_error(y_test, y_pred))),
-        "R2": float(r2_score(y_test, y_pred)),
-        "MAPE": float(mean_absolute_percentage_error(y_test, y_pred) * 100),
-        "AvgActual": float(y_test.mean()),
-        "AvgPred": float(y_pred.mean())
+        "MAE":       float(mean_absolute_error(y_true_orig, y_pred_orig)),
+        "RMSE":      float(np.sqrt(mean_squared_error(y_true_orig, y_pred_orig))),
+        "R2":        float(r2_score(y_true_orig, y_pred_orig)),
+        "MAPE":      float(mean_absolute_percentage_error(y_true_orig, y_pred_orig) * 100),
+        "AvgActual": float(y_true_orig.mean()),
+        "AvgPred":   float(y_pred_orig.mean()),
     }
-    return metrics
+    return metrics, y_true_orig, y_pred_orig
 
-def plot_xgb_results(
-    xgb_model,
-    X_train: pd.DataFrame,
-    dates_test: pd.Series,
-    y_test: pd.Series,
-    pred_xgb: np.ndarray,
+
+def plot_results(
+    dates: pd.Series,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    metrics: dict,
     plots_out: Path,
-    top_n: int = 15,
-    filename_prefix: str = "xgb_results"
-):
-    """
-    Plots:
-        1) Top XGBoost feature importance
-        2) Actual vs Predicted for 2025
-    Metrics (MAE, RMSE, R2, MAPE) are displayed on the predictions plot.
-    Both plots are saved to /doc/Results
-    """
-    # Feature Importance Plot
-    fi_df = pd.DataFrame({
-        "feature": X_train.columns,
-        "importance": xgb_model.feature_importances_
-    }).sort_values(by="importance", ascending=False).head(top_n)
+    test_year: int,
+    model: xgb.XGBRegressor,
+    feature_names: list[str],
+    top_n: int = 20,
+) -> None:
+    plots_out.mkdir(parents=True, exist_ok=True)
 
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x="importance", y="feature", data=fi_df, color="mediumseagreen")
-    plt.title("Top XGBoost Feature Importances")
-    plt.tight_layout()
-    
-    fi_path = plots_out / f"{filename_prefix}_feature_importance.png"
-    plt.savefig(fi_path)
-    print(f"Feature importance plot saved to {fi_path}")
-
-    # Actual vs Predicted Plot for 2025
-    # Reset indices
-    dates_test = dates_test.reset_index(drop=True)
-    y_test = y_test.reset_index(drop=True)
-    pred_xgb = pd.Series(pred_xgb).reset_index(drop=True)
-
-    # Focus on 2025
-    mask_2025 = dates_test.dt.year == 2025
-    dates_2025 = dates_test[mask_2025]
-    y_2025 = y_test[mask_2025]
-    pred_2025 = pred_xgb[mask_2025]
-
-    # Compute metrics
-    mae = mean_absolute_error(y_2025, pred_2025)
-    rmse = np.sqrt(mean_squared_error(y_2025, pred_2025))
-    r2 = r2_score(y_2025, pred_2025)
-    mape = mean_absolute_percentage_error(y_2025, pred_2025) * 100
-
-    metrics_text = f"MAE: {mae:.2f}\nRMSE: {rmse:.2f}\nR²: {r2:.3f}\nMAPE: {mape:.1f}%"
-
-    # Plot
+    # Actual vs Predicted
     plt.figure(figsize=(14, 6))
-    plt.plot(dates_2025, y_2025, label="Actual", color="black")
-    plt.plot(dates_2025, pred_2025, label="Predicted", color="green")
-    plt.title(f"XGBoost: Actual vs Predicted Delays (2025)")
-    plt.ylabel("Total Delay")
+    plt.plot(dates, y_true, label="Actual",    color="black")
+    plt.plot(dates, y_pred, label="Predicted", color="green")
+    plt.title(f"XGBoost: Actual vs Predicted Delays ({test_year})")
     plt.xlabel("Date")
+    plt.ylabel("Minutes Late")
     plt.legend()
 
-    # Add metrics text on top right
-    plt.gcf().text(0.78, 0.75, metrics_text, fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+    metrics_text = (
+        f"MAE: {metrics['MAE']:.2f}\n"
+        f"RMSE: {metrics['RMSE']:.2f}\n"
+        f"R²: {metrics['R2']:.3f}\n"
+        f"MAPE: {metrics['MAPE']:.1f}%"
+    )
+    plt.gcf().text(
+        0.78, 0.75, metrics_text,
+        fontsize=12,
+        bbox=dict(facecolor="white", alpha=0.5),
+    )
 
-    plt.tight_layout()
-    pred_path = plots_out / f"{filename_prefix}_predictions_2025.png"
-    plt.savefig(pred_path)
-    print(f"Predictions plot saved to {pred_path}")
+    pred_file = plots_out / f"xgb_predictions_{test_year}.png"
+    plt.savefig(pred_file, bbox_inches="tight")
+    plt.close()
+    print(f"Predictions plot saved to {pred_file}")
 
-def main() -> None:
-    args = parse_args()
+    # Feature Importance
+    importance = pd.Series(model.feature_importances_, index=feature_names)
+    importance = importance.nlargest(top_n).sort_values()
 
-    # Base repo directory
+    fig, ax = plt.subplots(figsize=(10, max(4, top_n * 0.4)))
+    importance.plot.barh(ax=ax, color="steelblue", edgecolor="white")
+    ax.set_title(f"XGBoost Feature Importance (Top {top_n})")
+    ax.set_xlabel("Importance (F-score)")
+    ax.set_ylabel("")
+    ax.spines[["top", "right"]].set_visible(False)
+
+    fi_file = plots_out / "xgb_feature_importance.png"
+    fig.savefig(fi_file, bbox_inches="tight")
+    plt.close()
+    print(f"Feature importance plot saved to {fi_file}")
+
+
+def main():
+    args     = parse_args()
     base_dir = Path(__file__).resolve().parents[2]
 
-    input_path = (base_dir / args.input).resolve()
-    train_out = (base_dir / args.train_out).resolve()
-    test_out = (base_dir / args.test_out).resolve()
-    predictions_out = (base_dir / args.predictions_out).resolve()
-    metrics_out = (base_dir / args.metrics_out).resolve()
-    model_out = (base_dir / args.model_out).resolve()
-    plots_out = (base_dir / args.plots_out).resolve()
+    # Load fully prepared dataset
+    df = pd.read_csv(base_dir / args.merged_data)
+    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")
 
-    # Load data
-    df = pd.read_csv(input_path, parse_dates=["DATE"])
-    
-    # Split train/test
-    X_train, X_test, y_train, y_test, dates_test = split_train_test(df, target=args.target, test_year=2025)
-    
-    # Train XGBoost
-    xgb_model = train_xgb(X_train, y_train, model_out=model_out)
-    
-    # Predict
-    pred_xgb = xgb_model.predict(X_test)
-    
-    # Evaluate
-    metrics = evaluate_model(y_test, pred_xgb)
-    print("Evaluation metrics:", metrics)
+    # Train / test split by year
+    train_df = df[df["DATE"].dt.year <  args.test_year].reset_index(drop=True)
+    test_df  = df[df["DATE"].dt.year == args.test_year].reset_index(drop=True)
 
-    # Save metrics JSON
+    target      = args.target
+    global_mean = train_df[target].mean()
+
+    X_train, y_train, _          = split_features_target(train_df, target, fill_value=global_mean)
+    X_test,  y_test,  dates_test = split_features_target(test_df,  target, fill_value=global_mean)
+
+    # Train
+    model = train_xgb(X_train, y_train, base_dir / args.model_out, args.random_state)
+
+    # Predict + invert log1p for metrics and reporting
+    y_pred = model.predict(X_test)
+    metrics, y_true_orig, y_pred_orig = evaluate_model(y_test, y_pred)
+    print("Evaluation Metrics:", metrics)
+
+    # Save metrics
+    metrics_out = base_dir / args.metrics_out
+    metrics_out.parent.mkdir(parents=True, exist_ok=True)
     with open(metrics_out, "w") as f:
         json.dump(metrics, f, indent=4)
-    print(f"Metrics saved to {metrics_out}")
 
-    # Save predictions
-    predictions_df = pd.DataFrame({
-        "DATE": dates_test,
-        "Actual": y_test,
-        "Predicted": pred_xgb
-    })
-    predictions_df.to_csv(predictions_out, index=False)
-    print(f"Predictions saved to {predictions_out}")
+    # Save predictions (inverted, original minutes scale)
+    preds_out = base_dir / args.predictions_out
+    preds_out.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({
+        "DATE":      dates_test,
+        "Actual":    y_true_orig,
+        "Predicted": y_pred_orig,
+    }).to_csv(preds_out, index=False)
+    print(f"Predictions saved to {preds_out}")
 
-    # Plot results (features + predictions)
-    plot_xgb_results(
-        xgb_model=xgb_model,
-        X_train=X_train,
-        dates_test=dates_test,
-        y_test=y_test,
-        pred_xgb=pred_xgb,
-        plots_out=plots_out,
-        top_n=15,
-        filename_prefix="xgb_plots",
+    # Plot
+    plot_results(
+        dates_test, y_true_orig, y_pred_orig, metrics,
+        base_dir / args.plots_out, args.test_year,
+        model=model,
+        feature_names=X_train.columns.tolist(),
+        top_n=args.top_n_features,
     )
+
 
 if __name__ == "__main__":
     main()
