@@ -78,7 +78,7 @@ def _build_station_pair_index(_df: pd.DataFrame) -> dict[str, list[str]]:
     (i.e. pairs that have a computed historical mean).
     """
     feature_dict = _load_feature_dict()
-    known_pairs  = set(feature_dict.get("station_pair_mean", {}).keys())
+    known_pairs  = set(feature_dict.get("station_pair", {}).keys())
 
     index: dict[str, list[str]] = {}
     for pair_key in known_pairs:
@@ -149,9 +149,9 @@ def build_feature_frame(
 
     # Mean encodings from saved dict — no recomputation
     pair_key          = f"{depart}_{arrive}"
-    depart_mean       = _lookup(feature_dict["depart_station_mean"], depart,    global_mean)
-    arrive_mean       = _lookup(feature_dict["arrive_station_mean"], arrive,    global_mean)
-    pair_mean         = _lookup(feature_dict["station_pair_mean"],   pair_key,  global_mean)
+    depart_mean       = _lookup(feature_dict["depart_station"], depart,    global_mean)
+    arrive_mean       = _lookup(feature_dict["arrive_station"], arrive,    global_mean)
+    pair_mean         = _lookup(feature_dict["station_pair"],   pair_key,  global_mean)
     # train_mean: no train number collected from user; use global mean as neutral fallback
     train_mean        = global_mean
 
@@ -242,10 +242,12 @@ with col1:
 
 with col2:
     valid_arrivals = pair_index.get(depart_station, [])
+
     if not valid_arrivals:
         st.warning("No known arrival stations for this departure.")
-        st.stop()
-    arrive_station = st.selectbox("Arrival Station", valid_arrivals)
+        arrive_station = None
+    else:
+        arrive_station = st.selectbox("Arrival Station", valid_arrivals)
 
 with col3:
     travel_date = st.date_input(
