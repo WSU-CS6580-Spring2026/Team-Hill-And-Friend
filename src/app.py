@@ -21,7 +21,7 @@ MODEL_PATH   = DATA_ROOT / "models/xgb_model.json"
 VALID_DATE_START = date(2025, 1, 1)
 VALID_DATE_END   = date(2025, 12, 31)
 
-# Feature columns must exactly match the order used during training in build_dataset.py / train_model.py
+# Feature columns must exactly match the order used during training in data_engineering.py / train_model.py
 FEATURE_COLUMNS = [
     "train_mean",
     "depart_station_mean",
@@ -164,7 +164,7 @@ def build_feature_frame(
     tmax       = _safe_float(weather_row.get("TMAX"),       55.0)
     tavg       = _safe_float(weather_row.get("TAVG"),       (tmin + tmax) / 2)
 
-    # Time features — sin + cos to match build_dataset.py
+    # Time features — sin + cos to match data_engineering.py
     year  = travel_dt.year
     month = travel_dt.month
     day   = travel_dt.day
@@ -205,13 +205,13 @@ def predict(feature_frame: pd.DataFrame, model: xgb.XGBRegressor) -> float:
 try:
     feature_dict = _load_feature_dict()
 except FileNotFoundError:
-    st.error(f"Feature dict not found at {FEATURE_DICT_PATH}. Run build_dataset.py first.")
+    st.error(f"Feature dict not found at {FEATURE_DICT_PATH}. Run data_engineering.py first.")
     st.stop()
 
 try:
     df = _load_dataset()
 except FileNotFoundError:
-    st.error(f"Merged dataset not found at {DATASET_PATH}. Run build_dataset.py first.")
+    st.error(f"Merged dataset not found at {DATASET_PATH}. Run data_engineering.py first.")
     st.stop()
 
 model_error = None
