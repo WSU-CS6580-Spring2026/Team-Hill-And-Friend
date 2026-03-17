@@ -33,7 +33,10 @@ def parse_args() -> argparse.Namespace:
                         help="Number of top features to show in importance plot")
     return parser.parse_args()
 
-
+def reverse_map_station(series: pd.Series, mapping: dict[str, float]) -> pd.Series:
+    rev_map = {v: k for k, v in mapping.items()}
+    return series.map(rev_map)
+    
 def split_features_target(
     df: pd.DataFrame,
     target: str,
@@ -149,7 +152,7 @@ def main():
     args     = parse_args()
     base_dir = Path(__file__).resolve().parents[2]
 
-    # Load fully prepared dataset
+    # Load dataset
     df = pd.read_csv(base_dir / args.merged_data)
     df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")
 
@@ -160,13 +163,18 @@ def main():
     target      = args.target
     global_mean = train_df[target].mean()
 
+    # Keep station columns for reverse mapping
+    depart_test = test_df["depart_station_mean"]
+    arrive_test = test_df["arrive_station_mean"]
+
+    # Split features & target
     X_train, y_train, _          = split_features_target(train_df, target, fill_value=global_mean)
     X_test,  y_test,  dates_test = split_features_target(test_df,  target, fill_value=global_mean)
 
-    # Train
+    # Train XGBoost model
     model = train_xgb(X_train, y_train, base_dir / args.model_out, args.random_state)
 
-    # Predict + invert log1p for metrics and reporting
+    # Predict
     y_pred = model.predict(X_test)
     metrics, y_true_orig, y_pred_orig = evaluate_model(y_test, y_pred)
     print("Evaluation Metrics:", metrics)
@@ -177,17 +185,29 @@ def main():
     with open(metrics_out, "w") as f:
         json.dump(metrics, f, indent=4)
 
-    # Save predictions (inverted, original minutes scale)
+    # Load feature dictionary and reverse-map stations
+    feature_dict_path = base_dir / "data/processed/feature_dict.json"
+    with open(feature_dict_path) as f:
+        feature_dict = json.load(f)
+
+    depart_series = reverse_map_station(depart_test, feature_dict["depart_station"])
+    arrive_series = reverse_map_station(arrive_test, feature_dict["arrive_station"])
+
+    # Save predictions CSV with station names
     preds_out = base_dir / args.predictions_out
     preds_out.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame({
+
+    preds_df = pd.DataFrame({
         "DATE":      dates_test,
+        "Depart":    depart_series,
+        "Arrive":    arrive_series,
         "Actual":    y_true_orig,
         "Predicted": y_pred_orig,
-    }).to_csv(preds_out, index=False)
-    print(f"Predictions saved to {preds_out}")
+    })
+    preds_df.to_csv(preds_out, index=False)
+    print(f"Predictions saved to {preds_out} with departure and arrival stations.")
 
-    # Plot
+    # Plot results
     plot_results(
         dates_test, y_true_orig, y_pred_orig, metrics,
         base_dir / args.plots_out, args.test_year,
@@ -195,7 +215,6 @@ def main():
         feature_names=X_train.columns.tolist(),
         top_n=args.top_n_features,
     )
-
 
 if __name__ == "__main__":
     main()
