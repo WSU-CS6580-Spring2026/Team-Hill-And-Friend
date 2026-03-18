@@ -149,9 +149,8 @@ The app allows users to provide the following inputs:
 | Depart Station | The LIRR station where the trip begins |
 | Arrive Station | The destination LIRR station |
 | Travel Date | Date of travel (must fall within 2025 due to weather data coverage) |
-| Rain Expected | Whether rain is expected during the trip |
-| Snow Expected | Whether snow is expected during the trip |
-| Average Temperature | Expected temperature in degrees Fahrenheit |
+
+Values such as the weather will be already provided.
 
 These inputs are used to generate the same feature structure that the model was trained on.
 
@@ -193,9 +192,3 @@ The application performs the following steps when generating a prediction:
 4. Run the XGBoost prediction
 5. Convert the predicted value back to minutes late
 6. Display the result to the user
-
-This version is **fully valid Markdown** and will render cleanly on **GitHub README**.
-
-If you'd like, I can also show you a **cleaner README structure used in ML repositories (sections like Project Overview, Installation, Usage, Model, App, Results)** that professors tend to like a lot.
-
-
