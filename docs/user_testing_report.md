@@ -24,3 +24,13 @@
 - Dislikes: When clicking predict, wants the screen to either snap to the answer or pop up. Resize weather to be smaller and possibly displayed above the input dropdowns/date which could allow for the prediction minutes to be displayed without pop up/snapping.
 - When asked if a map would be beneficial he didnt think so. Later after some discussion he asked if he was to be assumed to be a regular commuter, I responded that he was to be but it didnt have to always be the case. He said that a map wouldnt be really useful for everday commuters, but for someone new they would probably want the inputs and the visualization of map. 
 - He asked for the relevance of weather, explained the reason for the weather being that we're using the historical LIRR data with weather to help predict delay, thats when he recommended with the flow of information weather should probably be along the top.
+
+## **Kate Shipley** - Low Proficiency with Computers
+### Notes
+- Not very tech savvy and didn't want to test this, so I kept interaction brief.
+- Walked through example of user scenario and then had her try it on her own.
+- She was able to find the correct stations
+- She had trouble understanding the delay results and what the minutes meant. I explained that it was the predicted delay in minutes, but she still seemed confused about how to interpret that information.
+- Likes: How simple it was to use with the inputs.
+- Dislikes:  Information overload with the weather display and the delay prediction. She said it was too much information at once and it was overwhelming.
+- Confusion Points: The delay prediction and the weather display. She said it was too much information at once and it was overwhelming. Maybe simplify the weather display or make it more visually appealing to make it easier to understand.
