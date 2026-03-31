@@ -34,3 +34,13 @@
 - Likes: How simple it was to use with the inputs.
 - Dislikes:  Information overload with the weather display and the delay prediction. She said it was too much information at once and it was overwhelming.
 - Confusion Points: The delay prediction and the weather display. She said it was too much information at once and it was overwhelming. Maybe simplify the weather display or make it more visually appealing to make it easier to understand.
+
+## ** Cassidy Sterrett - Medium Proficiency With Computers
+### Notes
+- Not tech savvy but still has some expierence with computers being that she is a student. Rated her proficiency a 5 out of 10.
+- Left her in the room by herself to see how much she could figure out on her own.
+- Understood how to use drop boxes to select departure station, arrival station and date.
+- When going over the video she seemed confused/ignored the data the could be downloaded at the bottom of page(REMOVE?)
+- Was a little confused why the arrival station filtered based off departure station. 
+- Agreed that would be helpful to have a map to better understand station branches
+- Conclusion: She thought the app was overall simple and easy to use with only a few confusing points such as the filtered arival station and the data that could be downloaded at the bottom of the page. Thought adding a map would improve app. 
