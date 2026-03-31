@@ -44,3 +44,15 @@
 - Was a little confused why the arrival station filtered based off departure station. 
 - Agreed that would be helpful to have a map to better understand station branches
 - Conclusion: She thought the app was overall simple and easy to use with only a few confusing points such as the filtered arival station and the data that could be downloaded at the bottom of the page. Thought adding a map would improve app. 
+
+# User Reports
+## **Josh Arbon** - High Proficiency with Computers
+### Inputs requested for scenario
+- Departure Station: Jamaica, Arrival Station: Speonk, Date May 22nd 2025.
+### Notes
+- Hasn't really used Public Transportation before so this was new to him.
+- Was a little overwhelmed when looking at `Feature values passed to model`.
+- Was surprised when it was as easy as four button clicks. "That's all I have to do?".
+- Likes: The clean interface.
+- Dislikes: No major dislikes. 
+- Confusion Points: None stated, but observed he scrolled to select instead of typing which can be hard to find specific stations.
