@@ -35,7 +35,7 @@
 - Dislikes:  Information overload with the weather display and the delay prediction. She said it was too much information at once and it was overwhelming.
 - Confusion Points: The delay prediction and the weather display. She said it was too much information at once and it was overwhelming. Maybe simplify the weather display or make it more visually appealing to make it easier to understand.
 
-## ** Cassidy Sterrett - Medium Proficiency With Computers
+## **Cassidy Sterrett** - Medium Proficiency With Computers
 ### Notes
 - Not tech savvy but still has some expierence with computers being that she is a student. Rated her proficiency a 5 out of 10.
 - Left her in the room by herself to see how much she could figure out on her own.
