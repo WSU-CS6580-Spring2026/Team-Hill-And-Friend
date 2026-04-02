@@ -237,7 +237,7 @@ st.markdown(
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    default_depart_idx = all_departs.index("Amityville") if "Amityville" in all_departs else 0
+    default_depart_idx = all_departs.index("Amagansett") if "Amagansett" in all_departs else 0
     depart_station = st.selectbox("Departure Station", all_departs, index=default_depart_idx)
 
 with col2:
