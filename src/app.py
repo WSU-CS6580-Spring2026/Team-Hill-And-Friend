@@ -227,7 +227,7 @@ daily_df    = _daily_weather(df)
 all_departs = sorted(pair_index.keys())
 
 # UI
-st.title("🚆 LIRR Delay Predictor")
+st.title("🚆 Long Island Rail Road (LIRR) Delay Predictor")
 st.markdown(
     "Select a departure station, arrival station, and a travel date in 2025. "
     "Use the dropdown to select by either scrolling to or typing in station. "

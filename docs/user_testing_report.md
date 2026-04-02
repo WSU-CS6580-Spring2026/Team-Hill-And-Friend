@@ -25,6 +25,7 @@
 - When asked if a map would be beneficial he didnt think so. Later after some discussion he asked if he was to be assumed to be a regular commuter, I responded that he was to be but it didnt have to always be the case. He said that a map wouldnt be really useful for everday commuters, but for someone new they would probably want the inputs and the visualization of map. 
 - He asked for the relevance of weather, explained the reason for the weather being that we're using the historical LIRR data with weather to help predict delay, thats when he recommended with the flow of information weather should probably be along the top.
 
+
 ## **Kate Shipley** - Low Proficiency with Computers
 ### Notes
 - Not very tech savvy and didn't want to test this, so I kept interaction brief.
@@ -34,6 +35,7 @@
 - Likes: How simple it was to use with the inputs.
 - Dislikes:  Information overload with the weather display and the delay prediction. She said it was too much information at once and it was overwhelming.
 - Confusion Points: The delay prediction and the weather display. She said it was too much information at once and it was overwhelming. Maybe simplify the weather display or make it more visually appealing to make it easier to understand.
+
 
 ## **Cassidy Sterrett** - Medium Proficiency With Computers
 ### Notes
@@ -45,7 +47,7 @@
 - Agreed that would be helpful to have a map to better understand station branches
 - Conclusion: She thought the app was overall simple and easy to use with only a few confusing points such as the filtered arival station and the data that could be downloaded at the bottom of the page. Thought adding a map would improve app. 
 
-# User Reports
+
 ## **Josh Arbon** - High Proficiency with Computers
 ### Inputs requested for scenario
 - Departure Station: Jamaica, Arrival Station: Speonk, Date May 22nd 2025.
