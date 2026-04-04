@@ -83,25 +83,30 @@ conda env export --no-builds > environment.yml
 
 ## Run
 ```bash
-python src/train_model.py
+python src/models/train_model.py
 ```
 
 ## Default input/output
 - Input dataset: `data/processed/merged_lirr_weather.csv`
-- Predictions CSV: `data/processed/linear_regression_predictions.csv`
-- Trained model: `models/linear_regression_pipeline.joblib`
+- Predictions CSV: `data/processed/xgb_predictions.csv`
+- Metrics JSON: `data/processed/xgb_metrics.json`
+- Trained model: `models/xgb_model.json`
+- Plots directory: `docs/Results`
 
 The script creates output folders automatically (including `models/` if it does not exist).
 
 ## Optional arguments
 ```bash
-python src/train_model.py \
-  --input data/processed/merged_lirr_weather.csv \
+python src/models/train_model.py \
+  --merged-data data/processed/merged_lirr_weather.csv \
   --target minutes_late \
-  --test-size 0.2 \
+  --test-year 2025 \
   --random-state 42 \
-  --predictions-out data/processed/linear_regression_predictions.csv \
-  --model-out models/linear_regression_pipeline.joblib
+  --predictions-out data/processed/xgb_predictions.csv \
+  --metrics-out data/processed/xgb_metrics.json \
+  --model-out models/xgb_model.json \
+  --plots-out docs/Results \
+  --top-n-features 20
 ```
 
 ---
