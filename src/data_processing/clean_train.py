@@ -1,17 +1,14 @@
 from pathlib import Path
-import json
 import pandas as pd
 import numpy as np
 
 # Hard cap for extreme outliers
 OUTLIER_CAP_MINUTES = 200
-TEST_YEAR = 2025
 
 def clean_lirr_train(
     input_path: Path,
     output_path: Path,
     outlier_cap: int = OUTLIER_CAP_MINUTES,
-    test_year: int = TEST_YEAR,
 ) -> pd.DataFrame:
     """
     Cleans LIRR train delay data.
@@ -19,27 +16,17 @@ def clean_lirr_train(
     Parameters
     ----------
     input_path : Path
-        Path to raw CSV file
+        Path to raw CSV file.
     output_path : Path
-        Path to save cleaned CSV
+        Path to save cleaned CSV.
     outlier_cap : int
-        Maximum allowed minutes_late value
-    test_year : int
-        Year to hold out from mean encoding to prevent data leakage.
-        Means are computed on all rows BEFORE this year, then mapped
-        onto the full dataset (including test_year rows).
+        Maximum allowed minutes_late value before log transform.
 
     Returns
     -------
     pd.DataFrame
-        Cleaned LIRR train dataframe
-
-    Side Effects
-    ------------
-    Saves a JSON file of mean-encoding dicts alongside output_path,
-    named  <output_stem>_mean_encodings.json.  Each key is a column
-    name; each value is a {category: mean} mapping that can be used
-    at inference time.
+        Cleaned LIRR train dataframe with columns:
+        service_date, train, depart_station, arrive_station, minutes_late.
     """
     # 1) Load raw data
     df = pd.read_csv(input_path, low_memory=False)
@@ -60,19 +47,15 @@ def clean_lirr_train(
         df["service_date"], errors="coerce"
     ).dt.normalize()
 
-    # 5) Convert minutes_late numeric and cap outliers
+    # 5) Convert minutes_late to numeric, cap outliers, log-transform
     df["minutes_late"] = (
         pd.to_numeric(df["minutes_late"], errors="coerce")
         .clip(upper=outlier_cap)
         .astype("float32")
     )
+    df["minutes_late"] = np.log1p(df["minutes_late"])
 
-    # 6) Perform Log Transformation on minutes_late
-    df["minutes_late"] = df["minutes_late"].apply(
-        lambda x: np.log1p(x) if pd.notnull(x) else x
-    )
-
-    # 7) Select + enforce dtypes
+    # 6) Select columns and enforce dtypes
     df = df[
         [
             "service_date",
@@ -90,34 +73,9 @@ def clean_lirr_train(
         }
     )
 
-    # 8) Create station_pair column
-    df["station_pair"] = df["depart_station"] + "_" + df["arrive_station"]
-    all_cat_cols = ["train", "depart_station", "arrive_station", "station_pair"]
-
-    # 9) Mean-encode using only pre-test_year rows to avoid data leakage
-    #    Then save the encoding dict so it can be reused at inference time.
-    train_mask = df["service_date"].dt.year < test_year
-    df_train = df[train_mask]
-
-    mean_encodings: dict[str, dict] = {}
-    for col in all_cat_cols:
-        means = df_train.groupby(col, observed=True)["minutes_late"].mean()
-        mean_encodings[col] = means.to_dict()           # save for later use
-        df[col + "_mean"] = df[col].map(means)          # apply to full df
-
-    df.drop(columns=all_cat_cols, inplace=True)
-
-    # 10) Save cleaned output
+    # 7) Save cleaned output
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
-
-    # 11) Persist mean-encoding dict next to the cleaned CSV
-    encodings_path = output_path.with_name(
-        output_path.stem + "_mean_encodings.json"
-    )
-    with open(encodings_path, "w") as f:
-        json.dump(mean_encodings, f)
-    print("Saved mean encodings to:", encodings_path)
 
     return df
 

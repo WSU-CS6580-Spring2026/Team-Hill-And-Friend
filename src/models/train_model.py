@@ -2,25 +2,24 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
-import numpy as np
+
 import pandas as pd
 import xgboost as xgb
-import matplotlib.pyplot as plt
-from sklearn.metrics import (
-    mean_absolute_error,
-    mean_squared_error,
-    r2_score,
-    mean_absolute_percentage_error,
-)
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.models.evaluate import evaluate_model, plot_results
 
 TEST_YEAR = 2025
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train XGBoost on LIRR delay data.")
     parser.add_argument(
         "--merged-data", type=str, default="data/processed/merged_lirr_weather.csv",
-        help="Merged + feature-engineered CSV (output of build_dataset.py)",
+        help="Merged + feature-engineered CSV (output of data_engineering.py)",
     )
     parser.add_argument("--model-out",       type=str, default="models/xgb_model.json")
     parser.add_argument("--predictions-out", type=str, default="data/processed/xgb_predictions.csv")
@@ -33,19 +32,16 @@ def parse_args() -> argparse.Namespace:
                         help="Number of top features to show in importance plot")
     return parser.parse_args()
 
-def reverse_map_station(series: pd.Series, mapping: dict[str, float]) -> pd.Series:
-    rev_map = {v: k for k, v in mapping.items()}
-    return series.map(rev_map)
-    
+
 def split_features_target(
     df: pd.DataFrame,
     target: str,
     fill_value: float,
 ):
     """Separates features, target, and dates. Fills NaN with fill_value."""
-    dates = df["DATE"].reset_index(drop=True)
+    dates = df["date"].reset_index(drop=True)
     y     = df[target].reset_index(drop=True)
-    X     = df.drop(columns=[target, "DATE"]).reset_index(drop=True)
+    X     = df.drop(columns=[target, "date", "depart_label", "arrive_label"]).reset_index(drop=True)
     X     = X.fillna(fill_value)
     return X, y, dates
 
@@ -70,111 +66,33 @@ def train_xgb(
     return model
 
 
-def evaluate_model(
-    y_true: pd.Series,
-    y_pred: np.ndarray,
-) -> tuple[dict, np.ndarray, np.ndarray]:
-    """
-    Inverts log1p transform on both actual and predicted values before
-    computing all metrics, so reported numbers are in original minutes.
-    """
-    y_true_orig = np.expm1(y_true)
-    y_pred_orig = np.expm1(y_pred)
-
-    metrics = {
-        "MAE":       float(mean_absolute_error(y_true_orig, y_pred_orig)),
-        "RMSE":      float(np.sqrt(mean_squared_error(y_true_orig, y_pred_orig))),
-        "R2":        float(r2_score(y_true_orig, y_pred_orig)),
-        "MAPE":      float(mean_absolute_percentage_error(y_true_orig, y_pred_orig) * 100),
-        "AvgActual": float(y_true_orig.mean()),
-        "AvgPred":   float(y_pred_orig.mean()),
-    }
-    return metrics, y_true_orig, y_pred_orig
-
-
-def plot_results(
-    dates: pd.Series,
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    metrics: dict,
-    plots_out: Path,
-    test_year: int,
-    model: xgb.XGBRegressor,
-    feature_names: list[str],
-    top_n: int = 20,
-) -> None:
-    plots_out.mkdir(parents=True, exist_ok=True)
-
-    # Actual vs Predicted
-    plt.figure(figsize=(14, 6))
-    plt.plot(dates, y_true, label="Actual",    color="black")
-    plt.plot(dates, y_pred, label="Predicted", color="green")
-    plt.title(f"XGBoost: Actual vs Predicted Delays ({test_year})")
-    plt.xlabel("Date")
-    plt.ylabel("Minutes Late")
-    plt.legend()
-
-    metrics_text = (
-        f"MAE: {metrics['MAE']:.2f}\n"
-        f"RMSE: {metrics['RMSE']:.2f}\n"
-        f"R²: {metrics['R2']:.3f}\n"
-        f"MAPE: {metrics['MAPE']:.1f}%"
-    )
-    plt.gcf().text(
-        0.78, 0.75, metrics_text,
-        fontsize=12,
-        bbox=dict(facecolor="white", alpha=0.5),
-    )
-
-    pred_file = plots_out / f"xgb_predictions_{test_year}.png"
-    plt.savefig(pred_file, bbox_inches="tight")
-    plt.close()
-    print(f"Predictions plot saved to {pred_file}")
-
-    # Feature Importance
-    importance = pd.Series(model.feature_importances_, index=feature_names)
-    importance = importance.nlargest(top_n).sort_values()
-
-    fig, ax = plt.subplots(figsize=(10, max(4, top_n * 0.4)))
-    importance.plot.barh(ax=ax, color="steelblue", edgecolor="white")
-    ax.set_title(f"XGBoost Feature Importance (Top {top_n})")
-    ax.set_xlabel("Importance (F-score)")
-    ax.set_ylabel("")
-    ax.spines[["top", "right"]].set_visible(False)
-
-    fi_file = plots_out / "xgb_feature_importance.png"
-    fig.savefig(fi_file, bbox_inches="tight")
-    plt.close()
-    print(f"Feature importance plot saved to {fi_file}")
-
-
 def main():
     args     = parse_args()
     base_dir = Path(__file__).resolve().parents[2]
 
     # Load dataset
     df = pd.read_csv(base_dir / args.merged_data)
-    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
     # Train / test split by year
-    train_df = df[df["DATE"].dt.year <  args.test_year].reset_index(drop=True)
-    test_df  = df[df["DATE"].dt.year == args.test_year].reset_index(drop=True)
+    train_df = df[df["date"].dt.year <  args.test_year].reset_index(drop=True)
+    test_df  = df[df["date"].dt.year == args.test_year].reset_index(drop=True)
 
     target      = args.target
     global_mean = train_df[target].mean()
 
-    # Keep station columns for reverse mapping
-    depart_test = test_df["depart_station_mean"]
-    arrive_test = test_df["arrive_station_mean"]
+    # Capture station labels before split_features_target drops them
+    depart_test = test_df["depart_label"].reset_index(drop=True)
+    arrive_test = test_df["arrive_label"].reset_index(drop=True)
 
     # Split features & target
     X_train, y_train, _          = split_features_target(train_df, target, fill_value=global_mean)
     X_test,  y_test,  dates_test = split_features_target(test_df,  target, fill_value=global_mean)
 
-    # Train XGBoost model
+    # Train
     model = train_xgb(X_train, y_train, base_dir / args.model_out, args.random_state)
 
-    # Predict
+    # Predict and evaluate
     y_pred = model.predict(X_test)
     metrics, y_true_orig, y_pred_orig = evaluate_model(y_test, y_pred)
     print("Evaluation Metrics:", metrics)
@@ -185,29 +103,27 @@ def main():
     with open(metrics_out, "w") as f:
         json.dump(metrics, f, indent=4)
 
-    # Load feature dictionary and reverse-map stations
+    # Load feature dict, persist the exact training column order, then re-save
     feature_dict_path = base_dir / "data/processed/feature_dict.json"
     with open(feature_dict_path) as f:
         feature_dict = json.load(f)
+    feature_dict["feature_columns"] = X_train.columns.tolist()
+    with open(feature_dict_path, "w") as f:
+        json.dump(feature_dict, f, indent=2)
 
-    depart_series = reverse_map_station(depart_test, feature_dict["depart_station"])
-    arrive_series = reverse_map_station(arrive_test, feature_dict["arrive_station"])
-
-    # Save predictions CSV with station names
+    # Save predictions CSV
     preds_out = base_dir / args.predictions_out
     preds_out.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({
+        "date":      dates_test,
+        "depart":    depart_test,
+        "arrive":    arrive_test,
+        "actual":    y_true_orig,
+        "predicted": y_pred_orig,
+    }).to_csv(preds_out, index=False)
+    print(f"Predictions saved to {preds_out}")
 
-    preds_df = pd.DataFrame({
-        "DATE":      dates_test,
-        "Depart":    depart_series,
-        "Arrive":    arrive_series,
-        "Actual":    y_true_orig,
-        "Predicted": y_pred_orig,
-    })
-    preds_df.to_csv(preds_out, index=False)
-    print(f"Predictions saved to {preds_out} with departure and arrival stations.")
-
-    # Plot results
+    # Plot
     plot_results(
         dates_test, y_true_orig, y_pred_orig, metrics,
         base_dir / args.plots_out, args.test_year,
@@ -215,6 +131,7 @@ def main():
         feature_names=X_train.columns.tolist(),
         top_n=args.top_n_features,
     )
+
 
 if __name__ == "__main__":
     main()
