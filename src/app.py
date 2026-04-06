@@ -311,6 +311,9 @@ with col1:
 with col2:
     valid_arrivals = pair_index.get(depart_station, [])
 
+    #filter to make sure its not doubling up
+    valid_arrivals = [s for s in valid_arrivals if s != depart_station]
+
     if not valid_arrivals:
         st.warning("No known arrival stations for this departure.")
         arrive_station = None
