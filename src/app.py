@@ -18,6 +18,9 @@ DATASET_PATH = DATA_ROOT / "data/processed/merged_lirr_weather.csv"
 FEATURE_DICT_PATH = DATA_ROOT / "data/processed/feature_dict.json"
 MODEL_PATH   = DATA_ROOT / "models/xgb_model.json"
 
+# Local map image
+LI_MAP_IMAGE_PATH = Path(__file__).parent / "assets/lirr_long_island_map.png"
+
 VALID_DATE_START = date(2025, 1, 1)
 VALID_DATE_END   = date(2025, 12, 31)
 
@@ -47,6 +50,63 @@ FEATURE_COLUMNS = [
 ]
 
 st.set_page_config(page_title="LIRR Delay Predictor", layout="wide")
+
+# Fullscreen map state
+if "show_map" not in st.session_state:
+    st.session_state.show_map = False
+
+# Fullscreen map overlay
+if st.session_state.show_map:
+    st.markdown(
+        """
+        <style>
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        .stDeployButton {display: none;}
+        .block-container {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        div[data-testid="stVerticalBlock"] > div:has(.map-close-wrap) {
+            position: fixed;
+            top: 16px;
+            right: 20px;
+            z-index: 99999;
+            width: auto;
+        }
+        div[data-testid="stVerticalBlock"] > div:has(.map-close-wrap) button {
+            background-color: #111827 !important;
+            color: white !important;
+            border-radius: 999px !important;
+            width: 42px !important;
+            height: 42px !important;
+            min-height: 42px !important;
+            font-size: 18px !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+        }
+        div[data-testid="stVerticalBlock"] > div:has(.map-close-wrap) button:hover {
+            background-color: #dc2626 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    c1, c2 = st.columns([20, 1])
+    with c2:
+        st.markdown('<div class="map-close-wrap">', unsafe_allow_html=True)
+        if st.button("✕", key="close_map_btn", help="Close map"):
+            st.session_state.show_map = False
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    if LI_MAP_IMAGE_PATH.exists():
+        st.image(str(LI_MAP_IMAGE_PATH), use_container_width=True)
+    else:
+        st.error(f"Map image not found: {LI_MAP_IMAGE_PATH}")
+
+    st.stop()
 
 # Load feature dict (mean encodings + clip bounds)
 @st.cache_resource
@@ -149,9 +209,9 @@ def build_feature_frame(
 
     # Mean encodings from saved dict — no recomputation
     pair_key          = f"{depart}_{arrive}"
-    depart_mean       = _lookup(feature_dict["depart_station"], depart,    global_mean)
-    arrive_mean       = _lookup(feature_dict["arrive_station"], arrive,    global_mean)
-    pair_mean         = _lookup(feature_dict["station_pair"],   pair_key,  global_mean)
+    depart_mean       = _lookup(feature_dict.get("depart_station", {}), depart, global_mean)
+    arrive_mean       = _lookup(feature_dict.get("arrive_station", {}), arrive, global_mean)
+    pair_mean         = _lookup(feature_dict.get("station_pair", {}), pair_key, global_mean)
     # train_mean: no train number collected from user; use global mean as neutral fallback
     train_mean        = global_mean
 
@@ -183,6 +243,9 @@ def build_feature_frame(
         "PRCP_TOTAL":          prcp_total,
         "TAVG":                tavg,
         "year":                year,
+        "month":               month,
+        "day":                 day,
+        "dow":                 dow,
         "sin_month":           math.sin(2 * math.pi * month / 12),
         "cos_month":           math.cos(2 * math.pi * month / 12),
         "sin_day":             math.sin(2 * math.pi * day   / 31),
@@ -216,7 +279,7 @@ except FileNotFoundError:
 
 model_error = None
 try:
-    xgb_model = _load_model()
+    xgb_model  = _load_model()
 except Exception as exc:
     xgb_model  = None
     model_error = str(exc)
@@ -226,18 +289,27 @@ pair_index  = _build_station_pair_index(df)
 daily_df    = _daily_weather(df)
 all_departs = sorted(pair_index.keys())
 
-# UI
-st.title("🚆 Long Island Rail Road (LIRR) Delay Predictor")
+# UI: title and map button on same line
+title_col, button_col = st.columns([6, 1])
+with title_col:
+    st.title("🚆 LIRR Delay Predictor")
+with button_col:
+    st.write("")
+    st.write("")
+    if st.button("🗺️ Map", use_container_width=True):
+        st.session_state.show_map = True
+        st.rerun()
+
 st.markdown(
     "Select a departure station, arrival station, and a travel date in 2025. "
-    "Use the dropdown to select by either scrolling to or typing in station. "
-    "Weather conditions for that date will be pulled from historical records."
+    "Weather conditions for that date will be pulled from historical records and "
+    "passed to the trained XGBoost model alongside station-pair averages."
 )
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    default_depart_idx = all_departs.index("Amagansett") if "Amagansett" in all_departs else 0
+    default_depart_idx = all_departs.index("Amityville") if "Amityville" in all_departs else 0
     depart_station = st.selectbox("Departure Station", all_departs, index=default_depart_idx)
 
 with col2:
@@ -262,14 +334,15 @@ with col3:
 travel_dt   = pd.Timestamp(travel_date)
 weather_row = _get_weather_row(travel_dt, daily_df)
 
-st.subheader(f"**📅 Weather on {travel_date.strftime('%B %d, %Y')}**")
-w1, w2, w3, w4, w5, w6 = st.columns(6)
+st.subheader(f"📅 Weather on {travel_date.strftime('%B %d, %Y')}")
+w1, w2, w3, w4, w5 = st.columns(5)
 w1.metric("Avg Temp (°F)",   f"{_safe_float(weather_row.get('TAVG'), 0.0):.1f}°")
 w2.metric("High (°F)",       f"{_safe_float(weather_row.get('TMAX'), 0.0):.1f}°")
 w3.metric("Low (°F)",        f"{_safe_float(weather_row.get('TMIN'), 0.0):.1f}°")
 w4.metric("Precipitation",   f"{_safe_float(weather_row.get('PRCP'), 0.0):.2f} in")
 w5.metric("Snowfall",        f"{_safe_float(weather_row.get('SNOW'), 0.0):.2f} in")
-w6.metric("Snow Depth",      f"{_safe_float(weather_row.get('SNWD'), 0.0):.2f} in")
+w1b, w2b = st.columns([1,4])
+w1b.metric("Snow Depth (in)", f"{_safe_float(weather_row.get('SNWD'), 0.0):.2f}")
 
 st.divider()
 
@@ -302,6 +375,7 @@ if st.button("Predict Delay", type="primary"):
         st.metric(
             "Predicted Delay",
             f"{delay_minutes:.1f} min",
+            delta=f"{delta:+.1f} min vs network average",
         )
     with r2:
         if delay_minutes <= 5:
@@ -310,3 +384,6 @@ if st.button("Predict Delay", type="primary"):
             st.warning("🟡 Moderate delay — build in a short buffer.")
         else:
             st.error("🔴 Significant delay — consider alternatives.")
+
+    with st.expander("Feature values passed to model"):
+        st.dataframe(feature_frame.T.rename(columns={0: "value"}))
