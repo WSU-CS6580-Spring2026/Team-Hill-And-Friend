@@ -34,23 +34,6 @@ conda activate hillandfriend
 ```
 This keeps us all up to date and ensures we can work in the same environment for reproducible results.
 
-### Setting Up Pre-Commit Hooks and nbstripout
-After creating the conda environment, you need to set up pre-commit hooks and nbstripout to ensure consistent code quality and clean Jupyter notebooks in version control.
-
-#### Install Pre-Commit Hooks
-Pre-commit hooks automatically run checks before each commit to catch issues early. This includes running nbstripout on Jupyter notebooks:
-```
-pre-commit install
-```
-
-#### Install nbstripout Git Filter
-While the pre-commit hook handles nbstripout during commits, installing the git filter provides an additional safety layer that automatically strips notebook outputs during git operations:
-```
-nbstripout --install
-```
-
-Together, these tools help maintain code quality and make collaboration smoother by ensuring notebooks are stripped of execution outputs and unnecessary metadata before being committed to the repository.
-
 ### Note
 - Review `environment.yml` if you need platform-specific packages, but the file is designed to resolve cleanly on Windows, macOS, and Linux.
 
@@ -83,25 +66,30 @@ conda env export --no-builds > environment.yml
 
 ## Run
 ```bash
-python src/train_model.py
+python src/models/train_model.py
 ```
 
 ## Default input/output
 - Input dataset: `data/processed/merged_lirr_weather.csv`
-- Predictions CSV: `data/processed/linear_regression_predictions.csv`
-- Trained model: `models/linear_regression_pipeline.joblib`
+- Predictions CSV: `data/processed/xgb_predictions.csv`
+- Metrics JSON: `data/processed/xgb_metrics.json`
+- Trained model: `models/xgb_model.json`
+- Plots directory: `docs/Results`
 
 The script creates output folders automatically (including `models/` if it does not exist).
 
 ## Optional arguments
 ```bash
-python src/train_model.py \
-  --input data/processed/merged_lirr_weather.csv \
+python src/models/train_model.py \
+  --merged-data data/processed/merged_lirr_weather.csv \
   --target minutes_late \
-  --test-size 0.2 \
+  --test-year 2025 \
   --random-state 42 \
-  --predictions-out data/processed/linear_regression_predictions.csv \
-  --model-out models/linear_regression_pipeline.joblib
+  --predictions-out data/processed/xgb_predictions.csv \
+  --metrics-out data/processed/xgb_metrics.json \
+  --model-out models/xgb_model.json \
+  --plots-out docs/Results \
+  --top-n-features 20
 ```
 
 ---

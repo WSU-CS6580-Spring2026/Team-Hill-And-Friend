@@ -24,31 +24,6 @@ LI_MAP_IMAGE_PATH = Path(__file__).parent / "assets/lirr_long_island_map.png"
 VALID_DATE_START = date(2025, 1, 1)
 VALID_DATE_END   = date(2025, 12, 31)
 
-# Feature columns must exactly match the order used during training in data_engineering.py / train_model.py
-FEATURE_COLUMNS = [
-    "train_mean",
-    "depart_station_mean",
-    "arrive_station_mean",
-    "station_pair_mean",
-    "PRCP",
-    "SNOW",
-    "SNWD",
-    "TMAX",
-    "TMIN",
-    "PRCP_TOTAL",
-    "TAVG",
-    "year",
-    "month",
-    "day",
-    "dow",
-    "sin_month", "cos_month",
-    "sin_day",   "cos_day",
-    "sin_dow",   "cos_dow",
-    "rolling_delay3",
-    "rolling_delay7",
-    "total_prcp3",
-]
-
 st.set_page_config(page_title="LIRR Delay Predictor", layout="wide")
 
 # Fullscreen map state
@@ -118,7 +93,7 @@ def _load_feature_dict() -> dict:
 @st.cache_resource
 def _load_dataset() -> pd.DataFrame:
     df = pd.read_csv(DATASET_PATH, low_memory=False)
-    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
     return df
 
 # Load XGBRegressor (saved via model.save_model in train_model.py)
@@ -160,21 +135,22 @@ def _build_station_pair_index(_df: pd.DataFrame) -> dict[str, list[str]]:
 @st.cache_data
 def _daily_weather(_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Aggregates weather columns by DATE from the merged dataset.
-    Only 2025 rows are used since that is the prediction window.
-    Rolling features are recomputed on this daily series.
+    Aggregates per-trip rows by date for the 2025 prediction window.
+    Rolling features (rolling_delay3/7, total_prcp3) are read directly
+    from the pre-computed columns in the merged dataset so they match
+    the values seen during training, rather than being recomputed on a
+    daily-aggregated series.
     """
-    weather_cols = ["DATE", "PRCP", "SNOW", "SNWD", "PRCP_TOTAL", "TMIN", "TMAX", "TAVG", "minutes_late"]
+    weather_cols = [
+        "date", "prcp", "snow", "snwd", "prcp_total", "tmin", "tmax", "tavg",
+        "rolling_delay3", "rolling_delay7", "total_prcp3",
+    ]
     subset = (
         _df[weather_cols]
-        .dropna(subset=["DATE"])
-        .pipe(lambda d: d[d["DATE"].dt.year == 2025])
+        .dropna(subset=["date"])
+        .pipe(lambda d: d[d["date"].dt.year == 2025])
     )
-    daily = subset.groupby("DATE").mean().sort_index()
-    daily["rolling_delay3"] = daily["minutes_late"].rolling(3, min_periods=1).mean()
-    daily["rolling_delay7"] = daily["minutes_late"].rolling(7, min_periods=1).mean()
-    daily["total_prcp3"]    = daily["PRCP_TOTAL"].rolling(3, min_periods=1).sum()
-    return daily
+    return subset.groupby("date").mean().sort_index()
 
 # Helpers
 def _lookup(mapping: dict, key: str, fallback: float) -> float:
@@ -216,13 +192,13 @@ def build_feature_frame(
     train_mean        = global_mean
 
     # Weather from daily stats
-    prcp       = _safe_float(weather_row.get("PRCP"),       0.0)
-    snow       = _safe_float(weather_row.get("SNOW"),       0.0)
-    snwd       = _safe_float(weather_row.get("SNWD"),       0.0)
-    prcp_total = _safe_float(weather_row.get("PRCP_TOTAL"), prcp + snow)
-    tmin       = _safe_float(weather_row.get("TMIN"),       50.0)
-    tmax       = _safe_float(weather_row.get("TMAX"),       55.0)
-    tavg       = _safe_float(weather_row.get("TAVG"),       (tmin + tmax) / 2)
+    prcp       = _safe_float(weather_row.get("prcp"),       0.0)
+    snow       = _safe_float(weather_row.get("snow"),       0.0)
+    snwd       = _safe_float(weather_row.get("snwd"),       0.0)
+    prcp_total = _safe_float(weather_row.get("prcp_total"), prcp + snow)
+    tmin       = _safe_float(weather_row.get("tmin"),       50.0)
+    tmax       = _safe_float(weather_row.get("tmax"),       55.0)
+    tavg       = _safe_float(weather_row.get("tavg"),       (tmin + tmax) / 2)
 
     # Time features — sin + cos to match data_engineering.py
     year  = travel_dt.year
@@ -235,14 +211,17 @@ def build_feature_frame(
         "depart_station_mean": depart_mean,
         "arrive_station_mean": arrive_mean,
         "station_pair_mean":   pair_mean,
-        "PRCP":                prcp,
-        "SNOW":                snow,
-        "SNWD":                snwd,
-        "TMAX":                tmax,
-        "TMIN":                tmin,
-        "PRCP_TOTAL":          prcp_total,
-        "TAVG":                tavg,
+        "prcp":                prcp,
+        "snow":                snow,
+        "snwd":                snwd,
+        "tmax":                tmax,
+        "tmin":                tmin,
+        "prcp_total":          prcp_total,
+        "tavg":                tavg,
         "year":                year,
+        "month":               month,
+        "day":                 day,
+        "dow":                 dow,
         "sin_month":           math.sin(2 * math.pi * month / 12),
         "cos_month":           math.cos(2 * math.pi * month / 12),
         "sin_day":             math.sin(2 * math.pi * day   / 31),
@@ -264,8 +243,12 @@ def predict(feature_frame: pd.DataFrame, model: xgb.XGBRegressor) -> float:
 # Load everything
 try:
     feature_dict = _load_feature_dict()
+    FEATURE_COLUMNS = feature_dict["feature_columns"]
 except FileNotFoundError:
     st.error(f"Feature dict not found at {FEATURE_DICT_PATH}. Run data_engineering.py first.")
+    st.stop()
+except KeyError:
+    st.error("feature_dict.json is missing 'feature_columns'. Re-run train_model.py to regenerate it.")
     st.stop()
 
 try:
@@ -335,12 +318,12 @@ weather_row = _get_weather_row(travel_dt, daily_df)
 
 st.subheader(f"**📅 Weather on {travel_date.strftime('%B %d, %Y')}**")
 w1, w2, w3, w4, w5, w6 = st.columns(6)
-w1.metric("Avg Temp (°F)",   f"{_safe_float(weather_row.get('TAVG'), 0.0):.1f}°")
-w2.metric("High (°F)",       f"{_safe_float(weather_row.get('TMAX'), 0.0):.1f}°")
-w3.metric("Low (°F)",        f"{_safe_float(weather_row.get('TMIN'), 0.0):.1f}°")
-w4.metric("Precipitation",   f"{_safe_float(weather_row.get('PRCP'), 0.0):.2f} in")
-w5.metric("Snowfall",        f"{_safe_float(weather_row.get('SNOW'), 0.0):.2f} in")
-w6.metric("Snow Depth",      f"{_safe_float(weather_row.get('SNWD'), 0.0):.2f} in")
+w1.metric("Avg Temp (°F)",   f"{_safe_float(weather_row.get('tavg'), 0.0):.1f}°")
+w2.metric("High (°F)",       f"{_safe_float(weather_row.get('tmax'), 0.0):.1f}°")
+w3.metric("Low (°F)",        f"{_safe_float(weather_row.get('tmin'), 0.0):.1f}°")
+w4.metric("Precipitation",   f"{_safe_float(weather_row.get('prcp'), 0.0):.2f} in")
+w5.metric("Snowfall",        f"{_safe_float(weather_row.get('snow'), 0.0):.2f} in")
+w6.metric("Snow Depth",      f"{_safe_float(weather_row.get('snwd'), 0.0):.2f} in")
 
 st.divider()
 

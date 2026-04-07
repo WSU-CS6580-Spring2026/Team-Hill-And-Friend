@@ -25,32 +25,34 @@ def clean_weather(
         Cleaned weather dataframe.
     """
     df = pd.read_csv(input_path)
-    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce").dt.normalize()
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
 
-    df[["PRCP", "SNOW", "SNWD"]] = df[["PRCP", "SNOW", "SNWD"]].fillna(0)
-    df["PRCP_TOTAL"] = (df["PRCP"] + df["SNOW"]).round(2)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.normalize()
 
-    drop_cols = ["WESD", "WT05", "TOBS", "STATION", "NAME"]
+    df[["prcp", "snow", "snwd"]] = df[["prcp", "snow", "snwd"]].fillna(0)
+    df["prcp_total"] = (df["prcp"] + df["snow"]).round(2)
+
+    drop_cols = ["wesd", "wt05", "tobs", "station", "name"]
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
-    df = df.sort_values("DATE").reset_index(drop=True)
+    df = df.sort_values("date").reset_index(drop=True)
 
     # center=False prevents future data leaking into imputed values
-    df["tmin_roll"] = df["TMIN"].rolling(rolling_window, center=False, min_periods=1).mean().apply(np.ceil)
-    df["tmax_roll"] = df["TMAX"].rolling(rolling_window, center=False, min_periods=1).mean().apply(np.ceil)
-    df["TMIN"] = df["TMIN"].fillna(df["tmin_roll"])
-    df["TMAX"] = df["TMAX"].fillna(df["tmax_roll"])
+    df["tmin_roll"] = np.ceil(df["tmin"].rolling(rolling_window, center=False, min_periods=1).mean())
+    df["tmax_roll"] = np.ceil(df["tmax"].rolling(rolling_window, center=False, min_periods=1).mean())
+    df["tmin"] = df["tmin"].fillna(df["tmin_roll"])
+    df["tmax"] = df["tmax"].fillna(df["tmax_roll"])
     df = df.drop(columns=["tmin_roll", "tmax_roll"])
 
     df = df.astype({
-        "PRCP": "float32",
-        "SNOW": "float32",
-        "SNWD": "float32",
-        "PRCP_TOTAL": "float32",
-        "TMIN": "float32",
-        "TMAX": "float32",
+        "prcp": "float32",
+        "snow": "float32",
+        "snwd": "float32",
+        "prcp_total": "float32",
+        "tmin": "float32",
+        "tmax": "float32",
     })
 
-    df["TAVG"] = df[["TMIN", "TMAX"]].mean(axis=1)
+    df["tavg"] = df[["tmin", "tmax"]].mean(axis=1)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)

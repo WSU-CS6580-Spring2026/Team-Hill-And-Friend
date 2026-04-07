@@ -31,7 +31,4 @@ dependencies:
   - torchvision
   - torchaudio
 
-  - nbstripout
-  - pre-commit
-
   - streamlit
