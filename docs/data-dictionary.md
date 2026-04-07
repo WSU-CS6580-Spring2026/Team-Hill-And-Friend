@@ -171,14 +171,14 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 | depart_station_mean | float | Mean-encoded departure station |
 | arrive_station_mean | float | Mean-encoded arrival station |
 | station_pair_mean | float | Mean-encoded departure/arrival pair |
-| DATE | string (date-formatted) | Observation date |
-| PRCP | float | Daily precipitation |
-| SNOW | float | Daily snowfall |
-| SNWD | float | Snow depth |
-| TMAX | float | Daily maximum temperature |
-| TMIN | float | Daily minimum temperature |
-| PRCP_TOTAL | float | Combined precipitation and snowfall |
-| TAVG | float | Averaged temperature between TMIN and TMAX |
+| date | string (date-formatted) | Observation date |
+| prcp | float | Daily precipitation |
+| snow | float | Daily snowfall |
+| snwd | float | Snow depth |
+| tmax | float | Daily maximum temperature |
+| tmin | float | Daily minimum temperature |
+| prcp_total | float | Combined precipitation and snowfall |
+| tavg | float | Averaged temperature between TMIN and TMAX |
 | year | int | Year extracted from DATE |
 | month | int | Month extracted from DATE |
 | day | int | Day of month extracted from DATE |
@@ -197,15 +197,15 @@ Merged dataset combining cleaned LIRR delay records with cleaned daily weather o
 
 ## Merge Details
 
-- Join keys: `service_date` (train) ↔ `DATE` (weather)
+- Join keys: `service_date` (train) ↔ `data` (weather)
 - Join type: Inner join
 - Output includes mean-encoded train features, weather features, and engineered time/rolling features
 
 **Notes**
 - Rows are restricted to merged train/weather matches
-- Final merged output is restricted to rows where `DATE.year >= 2022`
+- Final merged output is restricted to rows where `date.year >= 2022`
 - Intended for exploratory analysis and predictive modeling
-- `PRCP_TOTAL` and `TAVG` are derived from the weather data
+- `prcp_total` and `tavg` are derived from the weather data
 - A combined feature dictionary is also written to `data/processed/feature_dict.json`
 ---
 
