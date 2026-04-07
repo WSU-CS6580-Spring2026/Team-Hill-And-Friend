@@ -316,15 +316,14 @@ with col3:
 travel_dt   = pd.Timestamp(travel_date)
 weather_row = _get_weather_row(travel_dt, daily_df)
 
-st.subheader(f"📅 Weather on {travel_date.strftime('%B %d, %Y')}")
-w1, w2, w3, w4, w5 = st.columns(5)
+st.subheader(f"**📅 Weather on {travel_date.strftime('%B %d, %Y')}**")
+w1, w2, w3, w4, w5, w6 = st.columns(6)
 w1.metric("Avg Temp (°F)",   f"{_safe_float(weather_row.get('tavg'), 0.0):.1f}°")
 w2.metric("High (°F)",       f"{_safe_float(weather_row.get('tmax'), 0.0):.1f}°")
 w3.metric("Low (°F)",        f"{_safe_float(weather_row.get('tmin'), 0.0):.1f}°")
 w4.metric("Precipitation",   f"{_safe_float(weather_row.get('prcp'), 0.0):.2f} in")
 w5.metric("Snowfall",        f"{_safe_float(weather_row.get('snow'), 0.0):.2f} in")
-w1b, w2b = st.columns([1,4])
-w1b.metric("Snow Depth (in)", f"{_safe_float(weather_row.get('snwd'), 0.0):.2f}")
+w6.metric("Snow Depth",      f"{_safe_float(weather_row.get('snwd'), 0.0):.2f} in")
 
 st.divider()
 
