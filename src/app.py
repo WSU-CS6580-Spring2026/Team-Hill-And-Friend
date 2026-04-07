@@ -18,10 +18,70 @@ DATASET_PATH = DATA_ROOT / "data/processed/merged_lirr_weather.csv"
 FEATURE_DICT_PATH = DATA_ROOT / "data/processed/feature_dict.json"
 MODEL_PATH   = DATA_ROOT / "models/xgb_model.json"
 
+# Local map image
+LI_MAP_IMAGE_PATH = Path(__file__).parent / "assets/lirr_long_island_map.png"
+
 VALID_DATE_START = date(2025, 1, 1)
 VALID_DATE_END   = date(2025, 12, 31)
 
 st.set_page_config(page_title="LIRR Delay Predictor", layout="wide")
+
+# Fullscreen map state
+if "show_map" not in st.session_state:
+    st.session_state.show_map = False
+
+# Fullscreen map overlay
+if st.session_state.show_map:
+    st.markdown(
+        """
+        <style>
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        .stDeployButton {display: none;}
+        .block-container {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        div[data-testid="stVerticalBlock"] > div:has(.map-close-wrap) {
+            position: fixed;
+            top: 16px;
+            right: 20px;
+            z-index: 99999;
+            width: auto;
+        }
+        div[data-testid="stVerticalBlock"] > div:has(.map-close-wrap) button {
+            background-color: #111827 !important;
+            color: white !important;
+            border-radius: 999px !important;
+            width: 42px !important;
+            height: 42px !important;
+            min-height: 42px !important;
+            font-size: 18px !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+        }
+        div[data-testid="stVerticalBlock"] > div:has(.map-close-wrap) button:hover {
+            background-color: #dc2626 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    c1, c2 = st.columns([20, 1])
+    with c2:
+        st.markdown('<div class="map-close-wrap">', unsafe_allow_html=True)
+        if st.button("✕", key="close_map_btn", help="Close map"):
+            st.session_state.show_map = False
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    if LI_MAP_IMAGE_PATH.exists():
+        st.image(str(LI_MAP_IMAGE_PATH), use_container_width=True)
+    else:
+        st.error(f"Map image not found: {LI_MAP_IMAGE_PATH}")
+
+    st.stop()
 
 # Load feature dict (mean encodings + clip bounds)
 @st.cache_resource
@@ -210,21 +270,32 @@ daily_df    = _daily_weather(df)
 all_departs = sorted(pair_index.keys())
 
 # UI
-st.title("🚆 LIRR Delay Predictor")
+title_col, map_btn_col = st.columns([8, 2])
+with title_col:
+    st.title("🚆 Long Island Rail Road (LIRR) Delay Predictor")
+with map_btn_col:
+    st.write("")
+    if st.button("🗺️ Map", use_container_width=True):
+        st.session_state.show_map = True
+        st.rerun()
+
 st.markdown(
     "Select a departure station, arrival station, and a travel date in 2025. "
-    "Weather conditions for that date will be pulled from historical records and "
-    "passed to the trained XGBoost model alongside station-pair averages."
+    "Use the dropdown to select by either scrolling to or typing in station. "
+    "Weather conditions for that date will be pulled from historical records."
 )
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    default_depart_idx = all_departs.index("Amityville") if "Amityville" in all_departs else 0
+    default_depart_idx = all_departs.index("Amagansett") if "Amagansett" in all_departs else 0
     depart_station = st.selectbox("Departure Station", all_departs, index=default_depart_idx)
 
 with col2:
     valid_arrivals = pair_index.get(depart_station, [])
+
+    #filter to make sure its not doubling up
+    valid_arrivals = [s for s in valid_arrivals if s != depart_station]
 
     if not valid_arrivals:
         st.warning("No known arrival stations for this departure.")
@@ -286,7 +357,6 @@ if st.button("Predict Delay", type="primary"):
         st.metric(
             "Predicted Delay",
             f"{delay_minutes:.1f} min",
-            delta=f"{delta:+.1f} min vs network average",
         )
     with r2:
         if delay_minutes <= 5:
@@ -295,6 +365,3 @@ if st.button("Predict Delay", type="primary"):
             st.warning("🟡 Moderate delay — build in a short buffer.")
         else:
             st.error("🔴 Significant delay — consider alternatives.")
-
-    with st.expander("Feature values passed to model"):
-        st.dataframe(feature_frame.T.rename(columns={0: "value"}))
