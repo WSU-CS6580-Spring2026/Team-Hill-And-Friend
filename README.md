@@ -22,6 +22,16 @@ The project includes:
 
 ---
 
+## Project Workflow
+
+Run the project in this order:
+
+1. Set up the environment
+2. Run the full pipeline
+3. Launch the Streamlit app
+
+---
+
 ## Repository Setup
 
 You can set up the project with either **Conda** or **Python venv + pip**.
@@ -73,16 +83,6 @@ Then install dependencies:
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-
----
-
-## Project Workflow
-
-Run the project in this order:
-
-1. Set up the environment
-2. Run the full pipeline
-3. Launch the Streamlit app
 
 ---
 
