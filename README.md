@@ -25,32 +25,33 @@ The project includes:
 ## Repository Setup
 
 You can set up the project with either **Conda** or **Python venv + pip**.
+First, clone the repository and move into the project folder:
+
+```bash
+git clone https://github.com/WSU-CS6580-Spring2026/Team-Hill-And-Friend.git
+cd Team-Hill-And-Friend
+```
 
 ### Option 1: Conda
 
 Make sure you have **Miniconda** or **Anaconda** installed.
 
-Clone the repository and create the environment:
+Create and activate the Conda environment:
 
 ```bash
-git clone https://github.com/WSU-CS6580-Spring2026/Team-Hill-And-Friend.git
-cd Team-Hill-And-Friend
 conda env create -f environment.yml
 conda activate hillandfriend
 ```
 
 ### Option 2: venv + pip
 
-Make sure you have a supported version of Python installed.
+Make sure you have a supported version of Python installed (Python 3.10+).
 
-Clone the repository and create a virtual environment:
+Create a virtual environment:
 
 ```bash
-git clone https://github.com/WSU-CS6580-Spring2026/Team-Hill-And-Friend.git
-cd Team-Hill-And-Friend
 python -m venv venv
 ```
-
 
 Activate the virtual environment.
 
