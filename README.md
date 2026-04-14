@@ -152,7 +152,6 @@ These inputs are used to generate the same feature structure used during trainin
 After clicking **Predict Delay**, the app displays:
 
 - predicted delay in minutes
-- comparison to the historical train delay average
 - a status indicator describing delay severity
 
 Possible delay statuses include:
