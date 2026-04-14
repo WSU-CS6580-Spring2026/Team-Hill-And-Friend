@@ -88,11 +88,13 @@ pip install -r requirements.txt
 
 ## Run the Full Pipeline First
 
-Before starting the Streamlit app, run the full pipeline from the project root:
+Before starting the Streamlit app for the first time, run the full pipeline from the project root:
 
 ```bash
 python src/pipeline/03_full_pipeline.py
 ```
+
+> **Note:** This command may take a minute to run, so give it time to finish.
 
 This step prepares the data and generates the files needed by the model and app.
 
