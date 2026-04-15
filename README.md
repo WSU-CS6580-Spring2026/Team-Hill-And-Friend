@@ -1,84 +1,187 @@
-
-
-#  Weather-Based LIRR Delay Prediction
+# Weather-Based LIRR Delay Prediction
 
 ## Group: Team Hill And Friend
 
 ### Members and Roles
-- **Mylee Anderson** — Project Lead / Model Helper
-- **Skyler Turner** — Model Lead
-- **Taylor Shipley** — Data Engineer / UI
-- **Chase Powers** — Reviewer
+- **Mylee Anderson** - Project Lead / Model Helper
+- **Skyler Turner** - Model Lead
+- **Taylor Shipley** - Data Engineer / UI
+- **Chase Powers** - Reviewer
 
 ---
 
-## High-Level Overview
+## Project Overview
 
-This project focuses on predicting **Long Island Rail Road (LIRR) train delays** based on weather conditions. Combining historical train delay records with Long Island weather station data to explore how weather patterns affect transit performance. The goal is to estimate how many minutes late a train is likely to be, helping commuters make better decisions about when and how to travel.
+This project predicts **Long Island Rail Road (LIRR) train delays** using historical train delay data and weather data. The goal is to estimate how many minutes late a train is likely to be so commuters can make better decisions about when and how to travel.
 
+The project includes:
+- data cleaning and preprocessing
+- a full pipeline for preparing modeling data
+- model training using XGBoost
+- a local Streamlit app for interactive delay prediction
 
 ---
-#  Getting Started
 
-### Using the environment.yml
-This single, OS-agnostic `environment.yml` keeps our dependencies and versions aligned so we can all work from the same setup. Create the `hillandfriend` conda environment once and reuse it for the notebooks.
+## Project Workflow
 
-### How to import
-- Ensure you have miniconda or anaconda installed on your computer
+Run the project in this order:
 
-- Pull the github repo
+1. Set up the environment
+2. Run the full pipeline
+3. Launch the Streamlit app
 
+---
+
+## Repository Setup
+
+You can set up the project with either **Conda** or **Python venv + pip**.
+First, clone the repository and move into the project folder:
+
+```bash
+git clone https://github.com/WSU-CS6580-Spring2026/Team-Hill-And-Friend.git
+cd Team-Hill-And-Friend
 ```
+
+### Option 1: Conda
+
+Make sure you have **Miniconda** or **Anaconda** installed.
+
+Create and activate the Conda environment:
+
+```bash
 conda env create -f environment.yml
 conda activate hillandfriend
 ```
-This keeps us all up to date and ensures we can work in the same environment for reproducible results.
 
-### Note
-- Review `environment.yml` if you need platform-specific packages, but the file is designed to resolve cleanly on Windows, macOS, and Linux.
+### Option 2: venv + pip
 
-### How to update
-- If you `conda install` something to use, update `environment.yml`
+Make sure you have a supported version of Python installed (Python 3.10+).
 
-- Run:
-```
-conda env export --no-builds > environment.yml
+Create a virtual environment:
+
+```bash
+python -m venv venv
 ```
 
-- Ensure the file was updated properly
+Activate the virtual environment.
+
+On macOS/Linux:
+
+```bash
+source venv/bin/activate
+```
+
+On Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+Then install dependencies:
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
 
 ---
-#  Sprint 2
 
-### Data cleaning
-- We split the team into two groups. We are currently prioritizing cleaning for the LIRR dataset and the weather dataset independently within the src/data_processing folder.
-- Once we have the datasets cleaned, ideally we'll be transferring both the raw and processed datasets to be online so that it will more accessible.
-- We will need to rerun our EDA and potentially expand upon it for further analysis. Saving result images into a results folder.
-- After we will update our data dictionary with the columns we plan to use for our machine learning models.
+## Run the Full Pipeline First
+
+Before starting the Streamlit app for the first time, run the full pipeline from the project root:
+
+```bash
+python src/pipeline/03_full_pipeline.py
+```
+
+> **Note:** This command may take a minute to run, so give it time to finish.
+
+This step prepares the data and generates the files needed by the model and app.
 
 ---
-#  Sprint 3
-### Model Training 
 
-- Use the training script to split processed data, with our best model we found saved into a .json file (as it saves the best for xgboost), generate predictions, and save the trained model artifact.
-- Updated data dictionary with new features used for our new models.
-- Models.ipynb has our first run of models with visualizations with some base models, we also have auto_models.ipynb where we made a pipeline and have various models and the best outcomes.
+## Run the Streamlit App
 
-## Run
+After the environment is activated and the full pipeline has been run, start the app from the project root:
+
+```bash
+streamlit run src/app.py
+```
+
+Streamlit will start a local server and print a URL similar to:
+
+```text
+http://localhost:8501
+```
+
+Open that link in your browser to use the application.
+
+---
+
+## Streamlit App Overview
+
+The Streamlit app is a local MVP that allows users to predict **LIRR train delays in real time** using the trained XGBoost model.
+
+The app combines:
+- historical train delay patterns
+- station-level delay averages
+- daily weather conditions
+
+Users can enter trip information and receive an estimated **delay in minutes**.
+
+---
+
+## App Inputs
+
+The app allows users to provide the following inputs:
+
+| Input | Description |
+|-------|-------------|
+| Depart Station | The LIRR station where the trip begins |
+| Arrive Station | The destination LIRR station |
+| Travel Date | Date of travel, currently limited to 2025 based on available weather coverage |
+
+Weather-related values are automatically provided by the application.
+
+These inputs are used to generate the same feature structure used during training.
+
+---
+
+## App Output
+
+After clicking **Predict Delay**, the app displays:
+
+- predicted delay in minutes
+- a status indicator describing delay severity
+
+Possible delay statuses include:
+- On Schedule
+- Moderate Delay
+- Significant Delay
+
+---
+
+## Model Training
+The trained model used by the Streamlit app is generated when running the full pipeline.
+
+For development or debugging only, the training script can also be run separately:
+
 ```bash
 python src/models/train_model.py
 ```
 
-## Default input/output
+### Default input/output
+
 - Input dataset: `data/processed/merged_lirr_weather.csv`
 - Predictions CSV: `data/processed/xgb_predictions.csv`
 - Metrics JSON: `data/processed/xgb_metrics.json`
 - Trained model: `models/xgb_model.json`
 - Plots directory: `docs/Results`
 
-The script creates output folders automatically (including `models/` if it does not exist).
+The script creates output folders automatically, including `models/` if it does not already exist.
 
-## Optional arguments
+### Optional arguments
+
 ```bash
 python src/models/train_model.py \
   --merged-data data/processed/merged_lirr_weather.csv \
@@ -94,89 +197,57 @@ python src/models/train_model.py \
 
 ---
 
-# Sprint 4
-
-## Interactive Prediction App (Streamlit)
-
-For Sprint 4, we built an interactive **Streamlit application** that allows users to predict **LIRR train delays in real time** using the trained XGBoost model from Sprint 3.
-
-The application combines:
-
-- Historical train delay patterns
-- Station-level delay averages
-- Daily weather conditions
-
-Users can enter trip and weather information, and the application returns an estimated **delay in minutes**.
-
-This app serves as a **local MVP demonstration** of the model and does not require cloud deployment.
-
----
-
-## Running the Streamlit App
-
-After activating the project environment, run the following command from the project root:
-
-```bash
-streamlit run src/app.py
-```
-
-Streamlit will start a local server and print a URL similar to:
-
-http://localhost:8501
-
-Open this link in your browser to use the application.
-
----
-
-## App Inputs
-
-The app allows users to provide the following inputs:
-
-| Input | Description |
-|-------|-------------|
-| Depart Station | The LIRR station where the trip begins |
-| Arrive Station | The destination LIRR station |
-| Travel Date | Date of travel (must fall within 2025 due to weather data coverage) |
-
-Values such as the weather will be already provided.
-
-These inputs are used to generate the same feature structure that the model was trained on.
-
----
-
-## App Output
-
-After clicking Predict Delay, the application will display:
-
-- Predicted Delay (minutes late)
-- Comparison to the historical train delay average
-- A status indicator describing delay severity
-
-Possible delay statuses include:
-
-- On Schedule
-- Moderate Delay
-- Significant Delay
-
-This provides a simple way to explore how weather conditions and station combinations influence train delays.
-
----
-
 ## Model Integration
 
-The application loads the trained model generated in Sprint 3:
+The Streamlit application loads the trained model from:
 
-`models/xgb_model.json`
+```text
+models/xgb_model.json
+```
 
-The model is loaded when the Streamlit app starts and reused for predictions to keep the interface responsive.
+The model is loaded when the app starts and then reused for predictions to keep the interface responsive.
 
 ### Prediction Pipeline
 
-The application performs the following steps when generating a prediction:
+When generating a prediction, the application:
 
-1. Collect user inputs from the Streamlit interface
-2. Preprocess inputs to match the training feature structure
-3. Build the model feature frame
-4. Run the XGBoost prediction
-5. Convert the predicted value back to minutes late
-6. Display the result to the user
+1. collects user inputs from the Streamlit interface
+2. preprocesses inputs to match the training feature structure
+3. builds the model feature frame
+4. runs the XGBoost prediction
+5. converts the predicted value back to minutes late
+6. displays the result to the user
+
+---
+
+## Reproducibility Notes
+
+To run this project successfully, use the setup instructions above and execute the pipeline before launching the Streamlit app.
+
+If you install new packages with Conda, update the environment file:
+
+```bash
+conda env export --no-builds > environment.yml
+```
+
+If you install new packages with pip, update `requirements.txt` as needed.
+
+---
+
+## Development Notes
+
+### Sprint 2: Data Cleaning
+- The team split work between LIRR data cleaning and weather data cleaning.
+- Cleaning work was focused in the `src/data_processing` folder.
+- Processed datasets support later EDA, feature engineering, and modeling work.
+
+### Sprint 3: Model Training
+- The team trained and evaluated several models.
+- The best model artifact was saved as an XGBoost `.json` file.
+- Additional exploration and visualizations were completed in notebooks such as:
+  - `Models.ipynb`
+  - `auto_models.ipynb`
+
+### Sprint 4: Interactive App
+- The team built a Streamlit app as a local interactive demonstration.
+- The app uses the trained model to make delay predictions based on route and weather context.
