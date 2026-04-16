@@ -32,14 +32,11 @@ After removing extreme outliers, both models improved:
 -	Random Forest: MAE = 5.12, RMSE = 6.63, R² = -0.14, MAPE = 54.68%
 -	XGBoost: MAE = 4.52, RMSE = 6.28, R² = -0.02, MAPE = 45.30%
 
-We then adjusted the feature set by removing train_mean, which appeared to encourage overfitting. This led to additional improvement:
+We then adjusted the feature set by removing all of the mean features, which appeared to encourage overfitting. This led to additional improvement:
 -	Random Forest: MAE = 4.88, RMSE = 6.44, R² = -0.08, MAPE = 51.05%
 -	XGBoost: MAE = 4.41, RMSE = 6.14, R² = 0.02, MAPE = 43.94%
-Our strongest modeling setup came from focusing on more recent data, using records from 2022 onward for training and evaluating on 2025 data:
--	Random Forest: MAE = 4.20, RMSE = 5.80, R² = -0.03, MAPE = 42.31%
--	XGBoost: MAE = 3.99, RMSE = 5.66, R² = 0.02, MAPE = 39.02%
 
-Additional summary statistics from the saved XGBoost predictions showed approximately (results may vary vs personal XGB Metrics):
+Our strongest modeling setup came from focusing on more recent years, using records from 2022 - 2024 (post-covid) for training and evaluating on 2025 data. Additional summary statistics from the saved XGBoost predictions showed approximately (results may vary vs personal XGB Metrics):
 -	Actual mean delay: 11.11 minutes
 -	Predicted mean delay: 10.35 minutes
 -	MAE: 3.43 minutes
@@ -47,7 +44,7 @@ Additional summary statistics from the saved XGBoost predictions showed approxim
 -   R²: 0.35
 -	MAPE: 28.49 minutes
 
-These results support selecting XGBoost as the Champion model. Across every major comparison, it produced lower error than Random Forest. Although the R² values remained low, indicating that delay prediction is still a noisy and difficult problem, the model still provided a reasonable estimate of likely delay length. In practice, reducing average absolute error to about 3.4 to 4.0 minutes suggests the model can offer useful rough guidance for commuters, even if it should not be treated as a perfect predictor.
+Ultimately, these results support selecting XGBoost as the Champion model. Across every major comparison, it produced lower error than Random Forest. Although the R² values remained low, indicating that delay prediction is still a noisy and difficult problem, the model still provided a reasonable estimate of likely delay length. In practice, reducing average absolute error to about 3.4 to 4.0 minutes suggests the model can offer useful rough guidance for commuters, even if it should not be treated as a perfect predictor.
 
 ## User Testing Impact
 Sprint 5 user testing directly influenced the final design of the Streamlit application. Testers with different levels of computer experience interacted with the app and provided feedback on both usability and clarity.
