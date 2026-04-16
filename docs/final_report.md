@@ -8,7 +8,7 @@ To address this problem, our team combined historical LIRR delay records with Lo
 ## The Data Journey
 Our project used two primary datasets: historical LIRR delay data and Long Island weather data. The train dataset provided route information and observed delay times, while the weather dataset contributed factors such as precipitation, snowfall, snow depth, and temperature. These datasets were cleaned separately and then merged into a single modeling dataset for prediction.
 
-One of the largest challenges was handling the number of categorical variables in the train data. The dataset contained around 49 departure stations, 43 arrival stations, 203 station pairs, and over 2,000 train identifiers. Representing all of these directly with one-hot encoding would have created a very high-dimensional dataset, so we needed a more efficient way to capture route and train patterns. Another challenge was aligning weather records with train trips so that each trip received the correct weather conditions for that day.
+One of the largest challenges was handling the number of categorical variables in the train data. The dataset we used contained around 49 departure stations, 43 arrival stations, 203 station pairs, and over 2,000 train identifiers. Representing all of these directly with one-hot encoding would have created a very high-dimensional dataset, so we needed a more efficient way to capture route and train patterns. Another challenge was aligning weather records with train trips so that each trip received the correct weather conditions for that day.
 
 Outliers were also a major issue. Extremely large delays could distort the model and reduce its usefulness for day-to-day predictions, so we experimented with removing extreme values using a three-sigma rule. In one round of testing, this removed 4,559 rows. In a later version focused on 2022 and forward, 1,009 rows were removed. We also found evidence that the model may have been learning patterns from older years that did not generalize as well to recent service, which led us to test models using only newer data.
 
@@ -39,12 +39,13 @@ Our strongest modeling setup came from focusing on more recent data, using recor
 -	Random Forest: MAE = 4.20, RMSE = 5.80, R² = -0.03, MAPE = 42.31%
 -	XGBoost: MAE = 3.99, RMSE = 5.66, R² = 0.02, MAPE = 39.02%
 
-Additional summary statistics from the saved XGBoost predictions showed (results may vary vs personal XGB Metrics):
+Additional summary statistics from the saved XGBoost predictions showed approximately (results may vary vs personal XGB Metrics):
 -	Actual mean delay: 11.11 minutes
 -	Predicted mean delay: 10.35 minutes
 -	MAE: 3.43 minutes
 -	RMSE: 5.71 minutes
--	Mean prediction error: -0.76 minutes
+-   R²: 0.35
+-	MAPE: 28.49 minutes
 
 These results support selecting XGBoost as the Champion model. Across every major comparison, it produced lower error than Random Forest. Although the R² values remained low, indicating that delay prediction is still a noisy and difficult problem, the model still provided a reasonable estimate of likely delay length. In practice, reducing average absolute error to about 3.4 to 4.0 minutes suggests the model can offer useful rough guidance for commuters, even if it should not be treated as a perfect predictor.
 
